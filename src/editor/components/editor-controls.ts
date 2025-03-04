@@ -18,7 +18,7 @@ import { EditorModal } from './editor-modal';
 import { repeat } from 'lit/directives/repeat.js';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
-import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userVariableTypes } from '@/vpl/program';
+import { Program, UserVariable, UserVariableType, initDefaultArgumentType, userVariableTypes, ProgramStatement } from '@/vpl/program';
 import {
   editorControlsCustomEvent,
   graphicalEditorCustomEvent,
@@ -32,8 +32,10 @@ import { EditorButton, Language } from '@/index';
 import Types from '@vpl/types.ts';
 import { GeBlock } from './ge-block';
 import { assignUuidToBlock, assignUuidToImportedProgram } from '@/vpl/program'; // Ensure this import exists
+import { GraphicalEditor } from './graphical-editor';
 
 export type VariableTableMode = 'display' | 'edit';
+export type EditorMode = 'normal' | 'skeletonize';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
 
 @customElement('editor-controls')
@@ -227,6 +229,22 @@ export class EditorControls extends LitElement {
         font-weight: 400;
       }
 
+      .mode-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background-color: var(--yellow-100);
+        border: 1px solid var(--yellow-400);
+        border-radius: 0.375rem;
+        color: var(--yellow-800);
+      }
+
+      .skeletonize-button.active {
+        background-color: var(--yellow-100);
+        color: var(--yellow-800);
+      }
+
       @media (min-width: 500px) {
         :host {
           flex-direction: row;
@@ -369,6 +387,9 @@ export class EditorControls extends LitElement {
   @property() skeletonizeMode: boolean = false;
   @property() savedPrograms: { name: string, program: any }[] = [];
 
+  @property() editorMode: EditorMode = 'normal';
+  @property() selectedBlocks: ProgramStatement[] = [];
+
   userVariablesModalRef: Ref<EditorModal> = createRef();
   addVariableExpressionModalRef: Ref<EditorModal> = createRef();
   addVariableModalRef: Ref<EditorModal> = createRef();
@@ -378,6 +399,14 @@ export class EditorControls extends LitElement {
   exportProgramLinkRef: Ref<HTMLAnchorElement> = createRef();
   programsModalRef: Ref<EditorProgramsModal> = createRef();
   devicesModalRef: Ref<EditorModal> = createRef();
+  graphicalEditorRef: Ref<GraphicalEditor> = createRef();
+
+  constructor() {
+    super();
+    this.addEventListener(graphicalEditorCustomEvent.STATEMENT_SELECTION_CHANGED, ((e: CustomEvent) => {
+      this.selectedBlocks = e.detail.selectedStatements;
+    }) as EventListener);
+  }
 
   get filteredVariables() {
     return Object.keys(this.program.header.userVariables)
@@ -973,6 +1002,49 @@ export class EditorControls extends LitElement {
     `;
   }
 
+  handleToggleSkeletonizeMode() {
+    if (this.editorMode === 'normal') {
+      this.editorMode = 'skeletonize';
+      const event = new CustomEvent(graphicalEditorCustomEvent.EDITOR_MODE_CHANGED, {
+        detail: { mode: 'skeletonize' },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+    } else {
+      this.editorMode = 'normal';
+      this.selectedBlocks = [];
+      const event = new CustomEvent(graphicalEditorCustomEvent.EDITOR_MODE_CHANGED, {
+        detail: { mode: 'normal' },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+    }
+  }
+
+  handleCreateProcedureFromSelection() {
+    if (this.selectedBlocks.length > 0) {
+      this.userProceduresModalRef.value.showModal();
+      
+      const event = new CustomEvent(graphicalEditorCustomEvent.CREATE_PROCEDURE_FROM_SELECTION, {
+        detail: { blocks: this.selectedBlocks },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+      
+      this.editorMode = 'normal';
+      this.selectedBlocks = [];
+      const modeEvent = new CustomEvent(graphicalEditorCustomEvent.EDITOR_MODE_CHANGED, {
+        detail: { mode: 'normal' },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(modeEvent);
+    }
+  }
+
   userVariablesModalTemplate() {
     return html`
       <editor-modal class="user-variables-modal" ${ref(this.userVariablesModalRef)} .modalTitle="${'Variables'}">
@@ -1334,6 +1406,58 @@ export class EditorControls extends LitElement {
             )}
             </div>
           `}
+      <div class="controls-wrapper">
+        ${this.editorMode === 'skeletonize'
+          ? html`
+              <div class="mode-indicator">
+                <editor-icon .icon="${icons.lightningChargeFill}"></editor-icon>
+                <span>Skeletonize Mode - Select blocks to create a new procedure</span>
+                <editor-button @click="${this.handleCreateProcedureFromSelection}">
+                  <editor-icon .icon="${icons.checkLg}"></editor-icon>
+                  Create Procedure
+                </editor-button>
+              </div>
+            `
+          : nothing}
+        <div class="controls">
+          <div class="controls-group-export">
+            <label for="program-file-input">
+              <input
+                ${ref(this.inputProgramFileRef)}
+                type="file"
+                name="program-file-input"
+                id="program-file-input"
+                style="display: none;"
+                accept="application/json"
+                @input="${this.handleImportProgram}" />
+              <editor-button @click="${this.handleImportProgram}" class="control-button">
+                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Import Program">
+                </editor-icon>
+                <span>Import Program</span>
+              </editor-button>
+            </label>
+            <editor-button @click="${this.handleExportProgram}" class="control-button">
+              <editor-icon .icon="${boxArrowUp}" .width="${18}" .height="${18}" title="Export Program"></editor-icon>
+              <span>Export Program</span>
+            </editor-button>
+            <a ${ref(this.exportProgramLinkRef)} href="" style="display: none;"></a>
+          </div>
+          <div class="controls-group-user">
+            <editor-button title="Variables" @click="${this.handleShowUserVariablesModal}" class="control-button">
+              <div class="variables-icon">𝑥</div>
+              <div>Variables</div>
+            </editor-button>
+            <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
+              <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
+              <span>Procedures</span>
+            </editor-button>
+          </div>
+          <editor-button
+            class="${this.editorMode === 'skeletonize' ? 'skeletonize-button active' : ''}"
+            @click="${this.handleToggleSkeletonizeMode}">
+            <editor-icon .icon="${icons.lightningChargeFill}"></editor-icon>
+            Skeletonize Mode
+          </editor-button>
         </div>
       </div>
       </editor-modal>

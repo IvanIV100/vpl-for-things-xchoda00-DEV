@@ -14,6 +14,10 @@ export const textEditorCustomEvent = {
 
 export const graphicalEditorCustomEvent = {
   PROGRAM_UPDATED: 'ge-program-updated',
+  EDITOR_MODE_CHANGED: 'editor-mode-changed',
+  CREATE_PROCEDURE_FROM_SELECTION: 'create-procedure-from-selection',
+  REMOVE_STATEMENTS: 'remove-statements',
+  STATEMENT_SELECTION_CHANGED: 'statement-selection-changed',
 } as const;
 
 export const expressionListCustomEvent = {

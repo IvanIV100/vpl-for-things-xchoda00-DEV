@@ -29,8 +29,7 @@ export class GEStatement extends LitElement {
     globalStyles,
     css`
       :host {
-        display: flex;
-        flex-direction: column;
+        display: block;
       }
 
       .expr-arg {
@@ -56,14 +55,21 @@ export class GEStatement extends LitElement {
 
       .statement-header {
         display: flex;
-        flex-direction: row;
-        /* justify-content: space-between; */
         align-items: center;
-        gap: 0.35rem;
-        padding: 0.5rem;
-        border-top-left-radius: 0.5rem;
-        border-top-right-radius: 0.5rem;
-        height: 55px;
+        gap: 0.25rem;
+        padding: 0.25rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .statement-header:hover {
+        background-color: var(--gray-100);
+      }
+
+      .statement-header.selected {
+        background-color: var(--yellow-100);
+        outline: 2px solid var(--yellow-500);
       }
 
       .nested {
@@ -200,6 +206,11 @@ export class GEStatement extends LitElement {
         margin-bottom: 8px;
       }
 
+      .statement-content {
+        margin-left: 1.5rem;
+        margin-top: 0.5rem;
+      }
+
       @media (min-width: 500px) {
         .statement-label {
           white-space: nowrap;
@@ -219,6 +230,7 @@ export class GEStatement extends LitElement {
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
   @property({ type: Object }) selectedStatements: Set<string>;
   @property({ type: Function }) toggleStatementSelection: (stmtUuid: string) => void;
+  @property() isSelected: boolean = false;
   //#endregion
 
   //#region Context
@@ -240,8 +252,7 @@ export class GEStatement extends LitElement {
   stmtDescModalRef: Ref<EditorModal> = createRef();
   //#endregion
 
-  //#region Lifecycles
-
+  //#region Lifecycle
   constructor() {
     super();
     this.addEventListener(editorVariablesModalCustomEvent.VARIABLE_SELECTED, (e: CustomEvent) => {
@@ -270,6 +281,11 @@ export class GEStatement extends LitElement {
         this.dispatchEvent(event);
       }
     });
+
+    this.addEventListener(graphicalEditorCustomEvent.STATEMENT_SELECTION_CHANGED, ((e: CustomEvent) => {
+      this.isSelected = e.detail.selectedStatements.includes(this.statement);
+      this.requestUpdate();
+    }) as EventListener);
   }
 
   updated() {
@@ -398,7 +414,17 @@ export class GEStatement extends LitElement {
         class="statement-header ${!hasNestedBlock || !this.nestedBlockVisible ? 'bottom-radius' : ''} ${this.language
           .statements[this.statement.id].isUserProcedure
           ? 'user-proc'
-          : ''}">
+          : ''} ${this.isSelected ? 'selected' : ''}"
+        @click="${(e: Event) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const event = new CustomEvent('statement-click', {
+            bubbles: true,
+            composed: true,
+            detail: { statement: this.statement }
+          });
+          this.dispatchEvent(event);
+        }}">
         <div class="statement-label-wrapper">
           ${this.language.statements[this.statement.id].icon
             ? html`

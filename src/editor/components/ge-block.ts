@@ -12,6 +12,7 @@ import {
   Language,
   UnitLanguageStatementWithArgs,
 } from '@/index';
+import { EditorMode } from './editor-controls';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { globalStyles } from '../global-styles';
@@ -110,6 +111,16 @@ export class GeBlock extends LitElement {
         text-align: center;
         color: var(--gray-500);
       }
+
+      .statement {
+        position: relative;
+        margin-bottom: 0.5rem;
+      }
+
+      .statement.selected {
+        outline: 2px solid var(--yellow-400);
+        outline-offset: 2px;
+      }
     `,
   ];
   //#endregion
@@ -125,6 +136,8 @@ export class GeBlock extends LitElement {
   @property() isExample: boolean = false;
   @property() selectedStatements: Set<string> = new Set();
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property() editorMode: EditorMode = 'normal';
+  @property() selectedStatements: ProgramStatement[] = [];
   //#endregion
 
   //#region Refs
@@ -206,6 +219,16 @@ export class GeBlock extends LitElement {
     this.addEventListener(statementCustomEvent.MOVE_DOWN, (e: CustomEvent) => {
       this.handleMoveStatementDown(e);
     });
+    this.addEventListener(graphicalEditorCustomEvent.EDITOR_MODE_CHANGED, ((e: CustomEvent) => {
+      this.editorMode = e.detail.mode;
+      if (this.editorMode === 'normal') {
+        this.selectedStatements = [];
+      }
+    }) as EventListener);
+    this.addEventListener(graphicalEditorCustomEvent.STATEMENT_SELECTION_CHANGED, ((e: CustomEvent) => {
+      this.selectedStatements = e.detail.selectedStatements;
+      this.requestUpdate();
+    }) as EventListener);
   }
 
   connectedCallback() {
@@ -374,6 +397,170 @@ export class GeBlock extends LitElement {
       this.requestUpdate();
     }
   }
+  handleStatementClick(stmt: ProgramStatement) {
+    if (this.editorMode === 'skeletonize') {
+      const isSelected = this.selectedStatements.includes(stmt);
+      
+      if (isSelected) {
+        // If unselecting a parent block, unselect all children and related blocks
+        if (this.isParentBlock(stmt)) {
+          this.unselectBlockAndChildren(stmt);
+        } else {
+          this.selectedStatements = this.selectedStatements.filter(s => s !== stmt);
+          // Also unselect related blocks
+          this.unselectRelatedBlocks(stmt);
+        }
+      } else {
+        // If selecting a block, select all its children and related blocks
+        if (this.canSelectStatement(stmt)) {
+          this.selectBlockAndChildren(stmt);
+          // Also select related blocks
+          this.selectRelatedBlocks(stmt);
+        }
+      }
+      
+      // Dispatch selection change event
+      const event = new CustomEvent(graphicalEditorCustomEvent.STATEMENT_SELECTION_CHANGED, {
+        detail: { selectedStatements: this.selectedStatements },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+      
+      this.requestUpdate();
+    }
+  }
+
+  selectRelatedBlocks(stmt: ProgramStatement) {
+    const stmtDef = this.language.statements[stmt.id];
+    
+    // Find all related blocks in the same level
+    const stmtIndex = this.block.indexOf(stmt);
+    
+    // If the statement has predecessors, select them
+    if (stmtDef.predecessors) {
+      let currentIndex = stmtIndex;
+      while (currentIndex >= 0) {
+        if (stmtDef.predecessors.includes(this.block[currentIndex].id)) {
+          this.selectBlockAndChildren(this.block[currentIndex]);
+        }
+        currentIndex--;
+      }
+    }
+    
+    // If the statement has successors, select them
+    if (stmtDef.successors) {
+      let currentIndex = stmtIndex + 1;
+      while (currentIndex < this.block.length) {
+        if (stmtDef.successors.includes(this.block[currentIndex].id)) {
+          this.selectBlockAndChildren(this.block[currentIndex]);
+        } else {
+          break;
+        }
+        currentIndex++;
+      }
+    }
+    
+    // If the statement has parents, select them
+    if (stmtDef.parents) {
+      let currentIndex = stmtIndex;
+      while (currentIndex >= 0) {
+        if (stmtDef.parents.includes(this.block[currentIndex].id)) {
+          this.selectBlockAndChildren(this.block[currentIndex]);
+        }
+        currentIndex--;
+      }
+    }
+  }
+
+  unselectRelatedBlocks(stmt: ProgramStatement) {
+    const stmtDef = this.language.statements[stmt.id];
+    
+    // Find all related blocks in the same level
+    const stmtIndex = this.block.indexOf(stmt);
+    
+    // If the statement has predecessors, unselect them
+    if (stmtDef.predecessors) {
+      let currentIndex = stmtIndex;
+      while (currentIndex >= 0) {
+        if (stmtDef.predecessors.includes(this.block[currentIndex].id)) {
+          this.unselectBlockAndChildren(this.block[currentIndex]);
+        }
+        currentIndex--;
+      }
+    }
+    
+    // If the statement has successors, unselect them
+    if (stmtDef.successors) {
+      let currentIndex = stmtIndex + 1;
+      while (currentIndex < this.block.length) {
+        if (stmtDef.successors.includes(this.block[currentIndex].id)) {
+          this.unselectBlockAndChildren(this.block[currentIndex]);
+        } else {
+          break;
+        }
+        currentIndex++;
+      }
+    }
+    
+    // If the statement has parents, unselect them
+    if (stmtDef.parents) {
+      let currentIndex = stmtIndex;
+      while (currentIndex >= 0) {
+        if (stmtDef.parents.includes(this.block[currentIndex].id)) {
+          this.unselectBlockAndChildren(this.block[currentIndex]);
+        }
+        currentIndex--;
+      }
+    }
+  }
+
+  isParentBlock(stmt: ProgramStatement): boolean {
+    return stmt.id === 'unit' && 'value' in stmt && typeof stmt.value === 'string' && stmt.value in this.program.header.userProcedures;
+  }
+
+  selectBlockAndChildren(stmt: ProgramStatement) {
+    this.selectedStatements.push(stmt);
+    if (this.isParentBlock(stmt) && 'value' in stmt && typeof stmt.value === 'string') {
+      const childBlock = this.program.header.userProcedures[stmt.value];
+      childBlock.forEach(childStmt => this.selectBlockAndChildren(childStmt));
+    }
+  }
+
+  unselectBlockAndChildren(stmt: ProgramStatement) {
+    // First unselect the current statement
+    this.selectedStatements = this.selectedStatements.filter(s => s !== stmt);
+    
+    // If it's a parent block, unselect all children
+    if (this.isParentBlock(stmt) && 'value' in stmt && typeof stmt.value === 'string') {
+      const childBlock = this.program.header.userProcedures[stmt.value];
+      childBlock.forEach(childStmt => this.unselectBlockAndChildren(childStmt));
+    }
+
+    // Find and unselect all blocks that depend on this block
+    this.block.forEach((dependentStmt, index) => {
+      const dependentDef = this.language.statements[dependentStmt.id];
+      
+      // If this block is a parent of the dependent block
+      if (dependentDef.parents?.includes(stmt.id)) {
+        this.unselectBlockAndChildren(dependentStmt);
+      }
+      
+      // If this block is a predecessor of the dependent block
+      if (dependentDef.predecessors?.includes(stmt.id)) {
+        this.unselectBlockAndChildren(dependentStmt);
+      }
+      
+      // If this block is a successor of the dependent block
+      if (dependentDef.successors?.includes(stmt.id)) {
+        this.unselectBlockAndChildren(dependentStmt);
+      }
+    });
+  }
+
+  canSelectStatement(stmt: ProgramStatement): boolean {
+    return !this.isParentBlock(stmt) || this.selectedStatements.length === 0;
+  }
   //#endregion
 
   //#region Templates
@@ -412,6 +599,13 @@ export class GeBlock extends LitElement {
             </ge-statement>
           `
       )}
+      ${this.block.map((stmt, index) => html`
+        <ge-statement
+          .statement="${stmt}"
+          .isSelected="${this.selectedStatements.includes(stmt)}"
+          @statement-click=${(e: CustomEvent) => this.handleStatementClick(e.detail.statement)}
+        ></ge-statement>
+      `)}
     `;
   }
 

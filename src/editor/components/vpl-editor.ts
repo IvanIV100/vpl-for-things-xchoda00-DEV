@@ -48,6 +48,7 @@ export class VplEditor extends LitElement {
   @property() isSmallScreen: boolean = document.body.clientWidth < 800;
   @property() viewMode: string = 'split';
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property() editorMode: EditorMode = 'normal';
   //#endregion
 
   //#region Refs
@@ -77,6 +78,10 @@ export class VplEditor extends LitElement {
     this.addEventListener(editorControlsCustomEvent.EDITOR_VIEW_CHANGED, (e: CustomEvent) => {
       this.handleChangeEditorView(e.detail.newView);
       this.viewMode = e.detail.newView;
+      this.requestUpdate();
+    });
+    this.addEventListener(graphicalEditorCustomEvent.EDITOR_MODE_CHANGED, (e: CustomEvent) => {
+      this.editorMode = e.detail.mode;
       this.requestUpdate();
     });
 
@@ -196,7 +201,7 @@ export class VplEditor extends LitElement {
     return html`
       <editor-controls .skeletonizeMode="${this.skeletonizeMode}"></editor-controls>
       <div class="editor-view-wrapper">
-        <graphical-editor .skeletonizeMode="${this.skeletonizeMode}" ${ref(this.graphicalEditorRef)}></graphical-editor>
+        <graphical-editor ${ref(this.graphicalEditorRef)} .editorMode="${this.editorMode}"></graphical-editor>
         <text-editor
           ${ref(this.textEditorRef)}
           style="${this.isSmallScreen && this.viewMode !== 'te' ? 'display: none;' : ''}"></text-editor>

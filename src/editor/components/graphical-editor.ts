@@ -5,6 +5,7 @@ import { html, css, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import { globalStyles } from '../global-styles';
+import { EditorMode } from './editor-controls';
 
 @customElement('graphical-editor')
 export class GraphicalEditor extends LitElement {
@@ -48,6 +49,8 @@ export class GraphicalEditor extends LitElement {
   program?: Program;
 
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property()
+  editorMode: EditorMode = 'normal';
   //#endregion
 
   //#region Render

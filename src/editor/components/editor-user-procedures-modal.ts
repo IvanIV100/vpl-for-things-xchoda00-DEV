@@ -6,13 +6,21 @@ import { EditorModal } from './editor-modal';
 import { plusLg } from '../icons';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
-import { Icon, Language, Program } from '@/index';
+import { Icon, Language, Program, ProgramStatement } from '@/index';
 import * as icons from '@/editor/icons';
 import { v4 as uuidv4 } from 'uuid';
-import { graphicalEditorCustomEvent } from '../editor-custom-events';
+import { graphicalEditorCustomEvent, statementCustomEvent } from '../editor-custom-events';
 
 @customElement('editor-user-procedures-modal')
 export class EditorUserProceduresModal extends LitElement {
+  constructor() {
+    super();
+    this.addEventListener(graphicalEditorCustomEvent.CREATE_PROCEDURE_FROM_SELECTION, ((e: CustomEvent) => {
+      this.selectedStatements = e.detail.blocks;
+      this.showModal();
+    }) as EventListener);
+  }
+
   static styles = [
     globalStyles,
     css`
@@ -147,6 +155,7 @@ export class EditorUserProceduresModal extends LitElement {
   @property() addProcNameIsMissing: boolean = false;
   @property() addProcName: string = '';
   @property() addProcNameIsTaken: boolean = false;
+  @property() selectedStatements: ProgramStatement[] = [];
 
   userProceduresModalRef: Ref<EditorModal> = createRef();
   addProcedureModalRef: Ref<EditorModal> = createRef();
@@ -224,6 +233,20 @@ export class EditorUserProceduresModal extends LitElement {
       backgroundColor: this.selectedBgColor,
       isUserProcedure: true,
     };
+
+    // If we have selected statements, use them as the procedure body
+    if (this.selectedStatements.length > 0) {
+      // Deep copy the selected statements to create the procedure body
+      this.program.header.userProcedures[newProcId] = this.selectedStatements.map(stmt => ({
+        ...stmt,
+        _uuid: uuidv4() // Generate new UUIDs for the copied statements
+      }));
+      
+      // Clear selection
+      this.selectedStatements = [];
+    } else {
+      this.program.header.userProcedures[newProcId] = [];
+    }
 
     // If skeletonize mode is active, copy the contents and turn it off
     if (this.program.header.skeletonize.length > 0) {
