@@ -217,6 +217,8 @@ export class GEStatement extends LitElement {
   @property() isExample: boolean = false;
   @property() exampleBlockIsVisible: boolean = false;
   @property({ type: Boolean }) skeletonizeMode: boolean = false;
+  @property({ type: Object }) selectedStatements: Set<string>;
+  @property({ type: Function }) toggleStatementSelection: (stmtUuid: string) => void;
   //#endregion
 
   //#region Context
@@ -528,7 +530,8 @@ export class GEStatement extends LitElement {
     return html`
       <div
         class="statement-wrapper ${this.skeletonizeMode ? 'disabled' : ''}"
-        @click="${this.skeletonizeMode ? (e: Event) => e.stopPropagation() : null}">
+        style="${this.skeletonizeMode && this.selectedStatements?.has(this.statement._uuid) ? 'outline: 2px solid yellow;' : ''}"
+        @click="${this.skeletonizeMode ? (e: Event) => { e.stopPropagation(); this.toggleStatementSelection(this.statement._uuid); } : null}">
         ${(this.statement as CompoundStatement).block
           ? html`
               ${this.statementTemplate(true)}
