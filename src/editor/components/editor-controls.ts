@@ -738,10 +738,20 @@ export class EditorControls extends LitElement {
     if (!stmt) return;
 
     if (this.program.header.skeletonize.some((s) => s._uuid === stmtUuid)) {
+      // Remove the statement from skeletonize
       this.program.header.skeletonize = this.program.header.skeletonize.filter((s) => s._uuid !== stmtUuid);
     } else {
-      this.program.header.skeletonize.push(stmt);
+      // Add a deep copy of the statement to skeletonize
+      this.program.header.skeletonize.push(JSON.parse(JSON.stringify(stmt)));
     }
+
+    // Update the selected statements for highlighting
+    const event = new CustomEvent('statement-selection-updated', {
+      bubbles: true,
+      composed: true,
+      detail: { selectedStatements: this.program.header.skeletonize.map((s) => s._uuid) },
+    });
+    this.dispatchEvent(event);
 
     this.requestUpdate();
   }

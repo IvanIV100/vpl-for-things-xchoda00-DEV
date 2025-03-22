@@ -348,9 +348,13 @@ export class GeBlock extends LitElement {
     const stmt = this.block.find((s) => s._uuid === stmtUuid);
     if (!stmt) return;
 
-    if (this.selectedStatements.has(stmtUuid)) {
+    if (this.program.header.skeletonize.some((s) => s._uuid === stmtUuid)) {
+      // Remove the statement from skeletonize
+      this.program.header.skeletonize = this.program.header.skeletonize.filter((s) => s._uuid !== stmtUuid);
       this.selectedStatements.delete(stmtUuid);
     } else {
+      // Add a deep copy of the statement to skeletonize
+      this.program.header.skeletonize.push(JSON.parse(JSON.stringify(stmt)));
       this.selectedStatements.add(stmtUuid);
     }
 
