@@ -156,6 +156,7 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
+      skeletonize: [], // Added skeletonize to the header
     };
     this.block = [];
   }
@@ -173,6 +174,7 @@ export class Program {
 
     this.header.userProcedures = programExport.header.userProcedures;
     this.header.userVariables = programExport.header.userVariables;
+    this.header.skeletonize = programExport.header.skeletonize || []; // Load skeletonize if present
     this.block = programExport.block;
   }
 
@@ -219,12 +221,13 @@ export class Program {
     let programExport = {
       header: {
         userVariables: this.header.userVariables,
-        userProcedures: {},
+        userProcedures: this.header.userProcedures,
+        skeletonize: this.header.skeletonize, 
       },
       block: this.exportProgramBlock(this.block),
     };
-    let proceduresCopy = JSON.parse(JSON.stringify(this.header.userProcedures));
 
+    let proceduresCopy = JSON.parse(JSON.stringify(this.header.userProcedures));
     for (let proc of Object.keys(proceduresCopy)) {
       proceduresCopy[proc] = this.exportProgramBlock(proceduresCopy[proc]);
     }
@@ -271,6 +274,7 @@ export class Program {
       header: {
         userVariables: programCopy.header.userVariables,
         userProcedures: {}, // Empty since all procedures are inlined
+        skeletonize: programCopy.header.skeletonize, // Ensure skeletonize is included
       },
       block: this.exportProgramBlock(programCopy.block),
     };
@@ -374,6 +378,7 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
+  skeletonize: any[]; // Added skeletonize to the header type
 };
 
 export type UserVariable = {

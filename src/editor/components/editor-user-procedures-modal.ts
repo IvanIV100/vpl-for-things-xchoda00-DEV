@@ -224,7 +224,14 @@ export class EditorUserProceduresModal extends LitElement {
       backgroundColor: this.selectedBgColor,
       isUserProcedure: true,
     };
-    this.program.header.userProcedures[newProcId] = [];
+
+    // Populate the procedure with skeletonize content if available
+    this.program.header.userProcedures[newProcId] = JSON.parse(
+      JSON.stringify(this.program.header.skeletonize || [])
+    );
+
+    // Clear skeletonize after creating the procedure
+    this.program.header.skeletonize = [];
 
     // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {

@@ -694,6 +694,7 @@ export class EditorControls extends LitElement {
         header: {
           userVariables: this.program?.header.userVariables,
           userProcedures: this.program?.header.userProcedures,
+          skeletonize: this.program?.header.skeletonize, // Include skeletonize in export
         },
         block: this.program?.block,
       };
@@ -716,12 +717,62 @@ export class EditorControls extends LitElement {
 
   handleSkeletonize() {
     this.skeletonizeMode = !this.skeletonizeMode;
+
+    if (!this.skeletonizeMode) {
+      // Clear skeletonize when exiting skeletonize mode
+      this.program.header.skeletonize = [];
+    }
+
     const event = new CustomEvent('skeletonize-mode-changed', {
       bubbles: true,
       composed: true,
-      detail: { active: this.skeletonizeMode }
+      detail: { active: this.skeletonizeMode },
     });
     this.dispatchEvent(event);
+  }
+
+  toggleStatementSelection(stmtUuid: string) {
+    if (!this.skeletonizeMode) return;
+
+    const stmt = this.program.block.find((s) => s._uuid === stmtUuid);
+    if (!stmt) return;
+
+    if (this.program.header.skeletonize.some((s) => s._uuid === stmtUuid)) {
+      this.program.header.skeletonize = this.program.header.skeletonize.filter((s) => s._uuid !== stmtUuid);
+    } else {
+      this.program.header.skeletonize.push(stmt);
+    }
+
+    this.requestUpdate();
+  }
+
+  handleCreateProcedureFromSkeletonize() {
+    if (this.program.header.skeletonize.length === 0) {
+      alert('No statements selected for the new procedure.');
+      return;
+    }
+
+    const newProcedureName = prompt('Enter the name for the new procedure:');
+    if (!newProcedureName) return;
+
+    if (this.program.header.userProcedures[newProcedureName]) {
+      alert('A procedure with this name already exists.');
+      return;
+    }
+
+    this.program.header.userProcedures[newProcedureName] = JSON.parse(
+      JSON.stringify(this.program.header.skeletonize)
+    );
+
+    this.program.header.skeletonize = []; // Clear skeletonize after creating the procedure
+
+    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+
+    alert(`Procedure "${newProcedureName}" created successfully.`);
   }
 
   handleImportHeader() {
