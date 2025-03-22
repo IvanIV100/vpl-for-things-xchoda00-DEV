@@ -132,9 +132,17 @@ export function assignUuidToExprOperands(expr: Expression) {
 }
 
 export function assignUuidToBlock(block: Block) {
-  for (let stmt of block) {
+  block.forEach((stmt) => {
     stmt._uuid = uuidv4();
-    if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
+if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
+      for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
+        if (isExpressionArray(arg)) {
+          (arg.value as Expression[]).forEach(item => assignUuidToExprOperands(item));
+        }
+      }
+    }
+
+if ((stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
       for (let arg of (stmt as AbstractStatementWithArgs | CompoundStatementWithArgs).arguments) {
         if (isExpressionArray(arg)) {
           (arg.value as Expression[]).forEach(item => assignUuidToExprOperands(item));
@@ -145,6 +153,16 @@ export function assignUuidToBlock(block: Block) {
     if ((stmt as CompoundStatement).block) {
       assignUuidToBlock((stmt as CompoundStatement).block);
     }
+  });
+}
+
+export function assignUuidToImportedProgram(program: { block: Block; header: Header }) {
+  // Assign UUIDs to the main block
+  assignUuidToBlock(program.block);
+
+  // Assign UUIDs to all user procedures
+  for (let proc of Object.keys(program.header.userProcedures)) {
+    assignUuidToBlock(program.header.userProcedures[proc]);
   }
 }
 

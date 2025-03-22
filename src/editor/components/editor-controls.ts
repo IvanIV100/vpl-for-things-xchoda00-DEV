@@ -31,6 +31,7 @@ import * as icons from '@/editor/icons';
 import { EditorButton, Language } from '@/index';
 import Types from '@vpl/types.ts';
 import { GeBlock } from './ge-block';
+import { assignUuidToBlock, assignUuidToImportedProgram } from '@/vpl/program'; // Ensure this import exists
 
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
@@ -649,6 +650,9 @@ export class EditorControls extends LitElement {
 
           this.savedPrograms.push({ name: programName, program: importedProgram });
           this.requestUpdate();
+
+          // Assign UUIDs to the imported program
+          assignUuidToImportedProgram(importedProgram);
 
           // Load the program into the editor
           this.program.header = importedProgram.header; // Update header
