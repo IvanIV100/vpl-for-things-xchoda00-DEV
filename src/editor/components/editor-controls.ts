@@ -781,17 +781,41 @@ export class EditorControls extends LitElement {
       return;
     }
 
+    // Copy skeletonize contents into the new procedure
     this.program.header.userProcedures[newProcedureName] = JSON.parse(
       JSON.stringify(this.program.header.skeletonize)
     );
 
-    this.program.header.skeletonize = []; // Clear skeletonize after creating the procedure
+    // Clear skeletonize after creating the procedure
+    this.program.header.skeletonize = [];
 
-    const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+    // Turn off skeletonize mode
+    this.skeletonizeMode = false;
+
+    // Dispatch skeletonize mode change event
+    const skeletonizeModeEvent = new CustomEvent('skeletonize-mode-changed', {
+      bubbles: true,
+      composed: true,
+      detail: { active: this.skeletonizeMode },
+    });
+    this.dispatchEvent(skeletonizeModeEvent);
+
+    // Dispatch program updated event
+    const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
       bubbles: true,
       composed: true,
     });
-    this.dispatchEvent(event);
+    this.dispatchEvent(programUpdatedEvent);
+
+    // Ensure UI updates to reflect skeletonize mode being turned off
+    this.requestUpdate();
+
+    // Navigate to the newly created procedure for editing
+    const proceduresModal = this.userProceduresModalRef.value;
+    proceduresModal.showModal();
+    requestAnimationFrame(() => {
+      proceduresModal.handleShowAddProcedureModal();
+    });
 
     alert(`Procedure "${newProcedureName}" created successfully.`);
   }

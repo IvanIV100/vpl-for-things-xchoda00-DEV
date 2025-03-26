@@ -180,6 +180,13 @@ export class VplEditor extends LitElement {
 
   handleSkeletonizeModeChanged(e: CustomEvent) {
     this.skeletonizeMode = e.detail.active;
+
+    // Ensure the editor reflects the skeletonize mode off state
+    if (!this.skeletonizeMode) {
+      this.graphicalEditorRef.value.requestUpdate();
+      this.textEditorRef.value.requestUpdate();
+    }
+
     this.requestUpdate();
   }
   //#endregion

@@ -225,13 +225,31 @@ export class EditorUserProceduresModal extends LitElement {
       isUserProcedure: true,
     };
 
-    // Populate the procedure with skeletonize content if available
-    this.program.header.userProcedures[newProcId] = JSON.parse(
-      JSON.stringify(this.program.header.skeletonize || [])
-    );
+    // If skeletonize mode is active, copy the contents and turn it off
+    if (this.program.header.skeletonize.length > 0) {
+      this.program.header.userProcedures[newProcId] = JSON.parse(
+        JSON.stringify(this.program.header.skeletonize)
+      );
 
-    // Clear skeletonize after creating the procedure
-    this.program.header.skeletonize = [];
+      // Clear skeletonize and turn off skeletonize mode
+      this.program.header.skeletonize = [];
+      const skeletonizeModeEvent = new CustomEvent('skeletonize-mode-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { active: false },
+      });
+      this.dispatchEvent(skeletonizeModeEvent);
+
+      // Rerender the editor window
+      const programUpdatedEvent = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(programUpdatedEvent);
+    } else {
+      // Create an empty procedure if skeletonize mode is not active
+      this.program.header.userProcedures[newProcId] = [];
+    }
 
     // Dispatch the update event
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
