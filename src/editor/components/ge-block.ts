@@ -353,9 +353,16 @@ export class GeBlock extends LitElement {
       this.program.header.skeletonize = this.program.header.skeletonize.filter((s) => s._uuid !== stmtUuid);
       this.selectedStatements.delete(stmtUuid);
     } else {
-      // Add a deep copy of the statement to skeletonize
-      this.program.header.skeletonize.push(JSON.parse(JSON.stringify(stmt)));
+      // Add the statement to skeletonize
+      this.program.header.skeletonize.push(stmt);
       this.selectedStatements.add(stmtUuid);
+
+      // Reorder skeletonize to maintain relative order based on index in the editor
+      this.program.header.skeletonize.sort((a, b) => {
+        const indexA = this.block.findIndex((s) => s._uuid === a._uuid);
+        const indexB = this.block.findIndex((s) => s._uuid === b._uuid);
+        return indexA - indexB;
+      });
     }
 
     this.requestUpdate();
