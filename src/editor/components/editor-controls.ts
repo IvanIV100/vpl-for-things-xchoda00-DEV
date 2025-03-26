@@ -722,17 +722,24 @@ export class EditorControls extends LitElement {
   handleSkeletonize() {
     this.skeletonizeMode = !this.skeletonizeMode;
 
-    if (!this.skeletonizeMode) {
-      // Clear skeletonize when exiting skeletonize mode
+    if (this.skeletonizeMode) {
+      // Initialize skeletonize state
+      this.program.header.skeletonize = [];
+    } else {
+      // Clear skeletonize state when exiting
       this.program.header.skeletonize = [];
     }
 
+    // Dispatch skeletonize mode change event
     const event = new CustomEvent('skeletonize-mode-changed', {
       bubbles: true,
       composed: true,
       detail: { active: this.skeletonizeMode },
     });
     this.dispatchEvent(event);
+
+    // Force update to ensure components reflect the new state
+    this.requestUpdate();
   }
 
   toggleStatementSelection(stmtUuid: string) {
