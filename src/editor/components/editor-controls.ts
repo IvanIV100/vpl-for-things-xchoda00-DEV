@@ -377,6 +377,7 @@ export class EditorControls extends LitElement {
   inputProgramFileRef: Ref<HTMLInputElement> = createRef();
   exportProgramLinkRef: Ref<HTMLAnchorElement> = createRef();
   programsModalRef: Ref<EditorProgramsModal> = createRef();
+  devicesModalRef: Ref<EditorModal> = createRef();
 
   get filteredVariables() {
     return Object.keys(this.program.header.userVariables)
@@ -940,6 +941,10 @@ export class EditorControls extends LitElement {
     }
   }
 
+  handleShowDevicesModal() {
+    this.devicesModalRef.value.showModal();
+  }
+
   programsModalTemplate() {
     return html`
       <editor-modal ${ref(this.programsModalRef)} .modalTitle="${'Programs'}">
@@ -1380,6 +1385,12 @@ export class EditorControls extends LitElement {
                 <editor-icon .icon="${icons.lightningChargeFill}" .width="${18}" .height="${18}" title="Skeletonize"></editor-icon>
                 <span>Skeletonize</span>
               </editor-button>
+              <editor-button 
+                @click="${this.handleShowDevicesModal}" 
+                class="control-button">
+                <editor-icon .icon="${icons.device}" .width="${18}" .height="${18}" title="Devices"></editor-icon>
+                <span>Devices</span>
+              </editor-button>
               <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
                 <option value="split">Split View</option>
                 <option value="ge">Graphical View</option>
@@ -1392,6 +1403,9 @@ export class EditorControls extends LitElement {
       ${this.userVariablesModalTemplate()}
       ${this.programsModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
+      <editor-modal ${ref(this.devicesModalRef)} .modalTitle="${'Devices'}">
+        <div style="padding: 1rem;">This is a placeholder for the Devices modal.</div>
+      </editor-modal>
     `;
   }
 
