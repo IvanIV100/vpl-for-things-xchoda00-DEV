@@ -639,19 +639,15 @@ export const baseLanguageStatements: Statements = {
   },
 
   deviceType: {
-    type: 'unit_with_args',
+    type: 'unit',
     group: 'iot',
     label: 'DeviceGroup',
     icon: 'bracesAsterisk',
     foregroundColor: '#ffff0f',
     backgroundColor: '#d977f6',
-    arguments: [
-      { type: Types.variable, label: 'Variable' },
-      { type: Types.unknown, label: 'Value' },
-      { type: Types.multi_device, label: 'Devices' },
-    ],
     description: {
       brief: 'Testing New Device Group',
     },
+
   },
 };
