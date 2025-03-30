@@ -6,11 +6,13 @@ export class Language {
   variables: Variables;
   statements: Statements;
   deviceList: string[];
+  deviceTypes: string[]; // Add deviceTypes array
 
   constructor(devices?: Device[]) {
     this.variables = {};
     this.statements = baseLanguageStatements;
     this.deviceList = [];
+    this.deviceTypes = []; // Initialize deviceTypes
 
     if (devices) {
       for (let device of devices) {
@@ -25,7 +27,14 @@ export class Language {
             ...func,
             deviceName: device.deviceName,
             label: `${device.deviceName}.${func.label}`,
+            deviceType: device.deviceType, // Include deviceType
           };
+        }
+
+        // Add unique device types to the deviceTypes array
+        if (!this.deviceTypes.includes(device.deviceType)) {
+          console.log('Adding device type:', device.deviceType);
+          this.deviceTypes.push(device.deviceType);
         }
 
         // Do not include devices with no functions
@@ -125,11 +134,12 @@ export type ArgumentOptions = {
 
 export type Device = {
   deviceName: string;
-  deviceType: string; // Added deviceType property
+  deviceType: string; // Ensure deviceType is part of the Device type
   attributes: string[];
   functions: (UnitLanguageStatement | UnitLanguageStatementWithArgs)[];
 };
 
 export type DeviceStatement = (UnitLanguageStatement | UnitLanguageStatementWithArgs) & {
   deviceName: string;
+  deviceType: string; // Add deviceType here
 };

@@ -1289,42 +1289,53 @@ export class EditorControls extends LitElement {
   devicesModalTemplate() {
     return html`
       <editor-modal ${ref(this.devicesModalRef)} .modalTitle="${'Devices & Types'}">
-        <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem;">
-          <div style="display: flex; gap: 1rem;">
-            <button
-              @click="${() => this.switchTab('devices')}"
-              style="${this.activeTab === 'devices' ? 'font-weight: bold;' : ''}">
-              Devices
-            </button>
-            <button
-              @click="${() => this.switchTab('types')}"
-              style="${this.activeTab === 'types' ? 'font-weight: bold;' : ''}">
-              Types
-            </button>
-          </div>
-          <div>
-            ${this.activeTab === 'devices'
-              ? html`
-                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    ${this.language.deviceList.map(
-                      (device) => html`
-                        <div
-                          style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 0.5rem; background-color: var(--blue-100);">
-                          <editor-icon
-                            .icon="${icons.lightbulb}"
-                            .width="${18}"
-                            .height="${18}"
-                            .color="${'var(--blue-500)'}">
-                          </editor-icon>
-                          <span style="font-weight: bold; color: var(--blue-900);">${device}</span>
-                        </div>
-                      `
-                    )}
-                  </div>
-                `
-              : html`<div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Types content here.</div>`}
-          </div>
+      <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem;">
+        <div style="display: flex; gap: 1rem;">
+        <button
+          @click="${() => this.switchTab('devices')}"
+          style="${this.activeTab === 'devices' ? 'font-weight: bold;' : ''}">
+          Devices
+        </button>
+        <button
+          @click="${() => this.switchTab('types')}"
+          style="${this.activeTab === 'types' ? 'font-weight: bold;' : ''}">
+          Types
+        </button>
         </div>
+        <div>
+        ${this.activeTab === 'devices'
+          ? html`
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            ${this.language.deviceList.map(
+              (device) => html`
+              <div
+                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 0.5rem; background-color: var(--blue-100);">
+                <editor-icon
+                .icon="${icons.lightbulb}"
+                .width="${18}"
+                .height="${18}"
+                .color="${'var(--blue-500)'}">
+                </editor-icon>
+                <span style="font-weight: bold; color: var(--blue-900);">${device}</span>
+              </div>
+              `
+            )}
+            </div>
+          `
+          : html`
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            ${this.language.deviceTypes.map(
+              (type) => html`
+              <div
+                style="padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: 0.5rem; background-color: var(--gray-100);">
+                <span style="font-weight: bold; color: var(--gray-800);">${type}</span>
+              </div>
+              `
+            )}
+            </div>
+          `}
+        </div>
+      </div>
       </editor-modal>
     `;
   }
