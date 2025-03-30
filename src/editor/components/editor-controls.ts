@@ -1304,7 +1304,24 @@ export class EditorControls extends LitElement {
           </div>
           <div>
             ${this.activeTab === 'devices'
-              ? html`<div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Devices content here.</div>`
+              ? html`
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    ${this.language.deviceList.map(
+                      (device) => html`
+                        <div
+                          style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 0.5rem; background-color: var(--blue-100);">
+                          <editor-icon
+                            .icon="${icons.lightbulb}"
+                            .width="${18}"
+                            .height="${18}"
+                            .color="${'var(--blue-500)'}">
+                          </editor-icon>
+                          <span style="font-weight: bold; color: var(--blue-900);">${device}</span>
+                        </div>
+                      `
+                    )}
+                  </div>
+                `
               : html`<div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Types content here.</div>`}
           </div>
         </div>
