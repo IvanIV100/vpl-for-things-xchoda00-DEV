@@ -1286,6 +1286,39 @@ export class EditorControls extends LitElement {
     }
   }
 
+  devicesModalTemplate() {
+    return html`
+      <editor-modal ${ref(this.devicesModalRef)} .modalTitle="${'Devices & Types'}">
+        <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem;">
+          <div style="display: flex; gap: 1rem;">
+            <button
+              @click="${() => this.switchTab('devices')}"
+              style="${this.activeTab === 'devices' ? 'font-weight: bold;' : ''}">
+              Devices
+            </button>
+            <button
+              @click="${() => this.switchTab('types')}"
+              style="${this.activeTab === 'types' ? 'font-weight: bold;' : ''}">
+              Types
+            </button>
+          </div>
+          <div>
+            ${this.activeTab === 'devices'
+              ? html`<div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Devices content here.</div>`
+              : html`<div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Types content here.</div>`}
+          </div>
+        </div>
+      </editor-modal>
+    `;
+  }
+
+  private activeTab: 'devices' | 'types' = 'devices';
+
+  private switchTab(tab: 'devices' | 'types') {
+    this.activeTab = tab;
+    this.requestUpdate();
+  }
+
   render() {
     return html`
       <div class="editor-controls-wrapper">
@@ -1388,7 +1421,7 @@ export class EditorControls extends LitElement {
               <editor-button 
                 @click="${this.handleShowDevicesModal}" 
                 class="control-button">
-                <editor-icon .icon="${icons.device}" .width="${18}" .height="${18}" title="Devices"></editor-icon>
+                <editor-icon .icon="${icons.arrowClockwise}" .width="${18}" .height="${18}" title="Devices"></editor-icon>
                 <span>Devices</span>
               </editor-button>
               <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
@@ -1403,9 +1436,7 @@ export class EditorControls extends LitElement {
       ${this.userVariablesModalTemplate()}
       ${this.programsModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
-      <editor-modal ${ref(this.devicesModalRef)} .modalTitle="${'Devices'}">
-        <div style="padding: 1rem;">This is a placeholder for the Devices modal.</div>
-      </editor-modal>
+      ${this.devicesModalTemplate()}
     `;
   }
 
