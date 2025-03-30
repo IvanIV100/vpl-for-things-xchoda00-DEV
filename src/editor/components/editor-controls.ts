@@ -33,6 +33,7 @@ import Types from '@vpl/types.ts';
 import { GeBlock } from './ge-block';
 import { assignUuidToBlock, assignUuidToImportedProgram } from '@/vpl/program'; // Ensure this import exists
 
+
 export type VariableTableMode = 'display' | 'edit';
 export type SelectedEditorView = 'ge' | 'te' | 'split';
 
@@ -1286,6 +1287,17 @@ export class EditorControls extends LitElement {
     }
   }
 
+  devicesModalTemplate() {
+    return html`
+      <editor-modal ${ref(this.devicesModalRef)} .modalTitle="${'Devices'}">
+        <div style="padding: 1rem;">
+          <h2>Devices Placeholder</h2>
+          <p>This is a placeholder modal for displaying devices.</p>
+        </div>
+      </editor-modal>
+    `;
+  }
+
   render() {
     return html`
       <div class="editor-controls-wrapper">
@@ -1388,7 +1400,7 @@ export class EditorControls extends LitElement {
               <editor-button 
                 @click="${this.handleShowDevicesModal}" 
                 class="control-button">
-                <editor-icon .icon="${icons.device}" .width="${18}" .height="${18}" title="Devices"></editor-icon>
+                <editor-icon .icon="${boxArrowInDown}" .width="${18}" .height="${18}" title="Devices"></editor-icon>
                 <span>Devices</span>
               </editor-button>
               <select class="editor-switcher" .value="${this.selectedEditorView}" @change="${this.handleSelectEditorView}">
@@ -1402,10 +1414,9 @@ export class EditorControls extends LitElement {
       </div>
       ${this.userVariablesModalTemplate()}
       ${this.programsModalTemplate()}
+      ${this.devicesModalTemplate()}
       <editor-user-procedures-modal ${ref(this.userProceduresModalRef)}></editor-user-procedures-modal>
-      <editor-modal ${ref(this.devicesModalRef)} .modalTitle="${'Devices'}">
-        <div style="padding: 1rem;">This is a placeholder for the Devices modal.</div>
-      </editor-modal>
+      <editor-devices-modal ${ref(this.devicesModalRef)}></editor-devices-modal>
     `;
   }
 
