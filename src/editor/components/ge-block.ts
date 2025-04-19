@@ -116,6 +116,81 @@ export class GeBlock extends LitElement {
         text-align: center;
         color: var(--gray-500);
       }
+
+      /* Device Selection Modal Styles */
+      .device-selection-modal-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        height: 500px;
+        color: black;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Style for the dialog element to control width */
+      .device-selection-modal dialog {
+        width: 75%;
+        min-width: 400px;
+        height: 600px;
+        max-height: 600px;
+        box-sizing: border-box;
+        min-height: 600px;
+      }
+
+      /* Fix the width of the search input container */
+      .search-container {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .device-search-input {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--gray-500);
+        font-family: var(--main-font);
+        margin-bottom: 0.75rem;
+        background-color: white;
+        color: black;
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+
+      .device-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .device-section-header {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: black;
+        margin-bottom: 0.25rem;
+      }
+
+      .device-section-divider {
+        height: 1px;
+        background-color: var(--gray-500);
+        margin: 0.25rem 0;
+      }
+
+      .device-buttons-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding-left: 0.5rem;
+        overflow-y: auto;
+      }
+
+      .no-devices-message {
+        color: var(--gray-700);
+        text-align: center;
+        padding: 1rem 0;
+      }
     `,
   ];
   //#endregion
@@ -134,6 +209,9 @@ export class GeBlock extends LitElement {
   @property({ type: Boolean }) restrainedMode: boolean = false;
   @property({ type: Boolean }) isHighlighted: boolean = false;
   @property() filteredDeviceStatements: string[] = [];
+  @property() deviceSearchInput: string = '';
+  @property() recommendedDeviceStatements: string[] = [];
+  @property() otherDeviceStatements: string[] = [];
   @property() tmpUUID :string = '';
   @property() parentProcedureUuid: string; // Add property to store the UUID
   @property() clickedBlockDeviceInit: string='';
@@ -246,7 +324,7 @@ export class GeBlock extends LitElement {
     this.program.addStatement(this.block, newStatement);
 
     if (this.language.statements[stmtKey].isUserProcedure) {
-      const addedStmt = this.block[this.block.length - 1]; 
+      const addedStmt = this.block[this.block.length - 1];
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
       assignUuidToBlock(userProcedureBlock);
 
@@ -263,7 +341,7 @@ export class GeBlock extends LitElement {
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
                 statement: stmt,
-                value: undefined 
+                value: undefined
               });
             } else if (this.language.deviceList.includes(deviceName)) {
               const deviceStatement = {
@@ -297,7 +375,7 @@ export class GeBlock extends LitElement {
                 uuid: stmt._uuid,
                 deviceId: stmt.id,
                 statement: deviceStatement,
-                value: undefined 
+                value: undefined
               });
             }
           }
@@ -311,7 +389,7 @@ export class GeBlock extends LitElement {
       const newEntry: MetadataInit = {
         uuid: addedStmt._uuid,
         id: stmtKey,
-        devices: devices, 
+        devices: devices,
       };
       this.program.header.initializedProcedures.push(newEntry);
     }
@@ -337,7 +415,7 @@ export class GeBlock extends LitElement {
   handleMoveStatementUp(e: CustomEvent) {
     if (this.skeletonizeMode) {
       e.stopPropagation();
-      return; 
+      return;
     }
     let statementIndex = e.detail.index;
     if (statementIndex > 0) {
@@ -358,7 +436,7 @@ export class GeBlock extends LitElement {
   handleMoveStatementDown(e: CustomEvent) {
     if (this.skeletonizeMode) {
       e.stopPropagation();
-      return; 
+      return;
     }
     let statementIndex = e.detail.index;
     if (statementIndex < this.block.length - 1) {
@@ -379,7 +457,7 @@ export class GeBlock extends LitElement {
   handleRemoveStatement(e: CustomEvent) {
     if (this.skeletonizeMode) {
       e.stopPropagation();
-      return; 
+      return;
     }
     let statementIndex = e.detail.index;
     const stmtToRemove = this.block[statementIndex];
@@ -453,7 +531,7 @@ export class GeBlock extends LitElement {
         this.clickedBlockDeviceInit = stmtUuid;
         if (clickedBlock._uuid !== undefined) {
           this.showDeviceSelectionModal(clickedBlock);
-          return; 
+          return;
         }
       }
     }
@@ -465,7 +543,7 @@ export class GeBlock extends LitElement {
     const addedUuids: string[] = [];
     const removedUuids: string[] = [];
 
-  
+
     const propagateSelection = (stmt: ProgramStatement, isSelected: boolean) => {
       const isInvalid = stmt.isInvalid;
       if (!isInvalid) {
@@ -526,22 +604,85 @@ export class GeBlock extends LitElement {
     });
     this.dispatchEvent(programEvent);
 
-    this.requestUpdate(); 
+    this.requestUpdate();
   }
 
 
   showDeviceSelectionModal(clickedBlock: ProgramStatement) {
     this.clickedBlockDeviceInit = clickedBlock._uuid;
-    this.filteredDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
+    this.deviceSearchInput = '';
+
+    // Get all device statements
+    const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
       const statement = this.language.statements[stmtKey];
       return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
         && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
-
     });
+
+    // Find the device type of the clicked block if it's a deviceType statement
+    let selectedDeviceType = '';
+    if (clickedBlock.id === 'deviceType' && (clickedBlock as AbstractStatementWithArgs).arguments?.[0]) {
+      selectedDeviceType = String((clickedBlock as AbstractStatementWithArgs).arguments[0].value);
+    }
+
+    // Categorize devices into recommended and other based on device type
+    this.categorizeDeviceStatements(allDeviceStatements, selectedDeviceType);
+
+    // Set filtered statements to all statements initially
+    this.filteredDeviceStatements = allDeviceStatements;
+
     this.deviceSelectionModalRef.value.showModal();
   }
 
- 
+  categorizeDeviceStatements(deviceStatements: string[], selectedDeviceType: string) {
+    this.recommendedDeviceStatements = [];
+    this.otherDeviceStatements = [];
+
+    deviceStatements.forEach(stmtKey => {
+      const deviceName = stmtKey.split('.')[0];
+      const deviceType = this.language.deviceListWithTypes[deviceName];
+
+      if (deviceType === selectedDeviceType && selectedDeviceType !== '') {
+        this.recommendedDeviceStatements.push(stmtKey);
+      } else {
+        this.otherDeviceStatements.push(stmtKey);
+      }
+    });
+  }
+
+  handleDeviceSearchInput(e: Event) {
+    this.deviceSearchInput = (e.currentTarget as HTMLInputElement).value;
+    const searchTerm = this.deviceSearchInput.toLowerCase();
+
+    // Filter all device statements based on search input
+    const allDeviceStatements = Object.keys(this.language.statements).filter((stmtKey) => {
+      const statement = this.language.statements[stmtKey];
+      return statement.group !== 'logic' && statement.group !== 'loop' && statement.group !== 'variable' && statement.group !== 'misc' && statement.group !== 'internal'
+        && statement.label !== 'Send Notification' && statement.label !== 'DeviceType';
+    });
+
+    // Filter based on search term
+    if (searchTerm) {
+      this.filteredDeviceStatements = allDeviceStatements.filter(stmtKey => {
+        const statement = this.language.statements[stmtKey];
+        return statement.label.toLowerCase().includes(searchTerm);
+      });
+    } else {
+      this.filteredDeviceStatements = allDeviceStatements;
+    }
+
+    // Find the device type of the clicked block if it's a deviceType statement
+    const clickedBlock = this.block.find((stmt) => stmt._uuid === this.clickedBlockDeviceInit);
+    let selectedDeviceType = '';
+    if (clickedBlock && clickedBlock.id === 'deviceType' && (clickedBlock as AbstractStatementWithArgs).arguments?.[0]) {
+      selectedDeviceType = String((clickedBlock as AbstractStatementWithArgs).arguments[0].value);
+    }
+
+    // Recategorize filtered statements
+    this.categorizeDeviceStatements(this.filteredDeviceStatements, selectedDeviceType);
+  }
+
+
   handleDeviceStatementSelected(stmtKey: string) {
     this.deviceSelectionModalRef.value.hideModal();
 
@@ -550,7 +691,7 @@ export class GeBlock extends LitElement {
       const selectedStatement = {
         ...this.language.statements[stmtKey],
         id: stmtKey,
-        _uuid: clickedBlock._uuid, 
+        _uuid: clickedBlock._uuid,
       };
       const index = this.block.indexOf(clickedBlock);
       if (index !== -1) {
@@ -795,19 +936,65 @@ export class GeBlock extends LitElement {
       ${this.isExample
         ? html`${this.statementsTemplate()}`
         : html`${this.statementsTemplate()} ${this.addStatementButtonTemplate()} ${this.addStatementModalTemplate()}`}
-      <editor-modal ${ref(this.deviceSelectionModalRef)} .modalTitle="${'Select Device Statement'}">
+      <editor-modal ${ref(this.deviceSelectionModalRef)} .modalTitle="${'Select Device Statement'}" class="device-selection-modal">
         <div class="device-selection-modal-content">
-          ${this.filteredDeviceStatements.map((stmtKey) => {
-            const statement = this.language.statements[stmtKey];
-            return html`
-              <editor-button
-                @click="${() => this.handleDeviceStatementSelected(stmtKey)}"
-                style="color: ${statement.foregroundColor}; background-color: ${statement.backgroundColor};">
-                <editor-icon .icon="${icons[statement.icon]}"></editor-icon>
-                <span>${statement.label}</span>
-              </editor-button>
-            `;
-          })}
+          <div style="padding: 1rem; height: 500px; overflow-y: auto;">
+            <!-- Search bar -->
+            <div class="search-container">
+              <input
+                type="text"
+                placeholder="Search"
+                class="device-search-input"
+                .value="${this.deviceSearchInput}"
+                @input="${this.handleDeviceSearchInput}" />
+            </div>
+
+            <!-- Recommended section -->
+            ${this.recommendedDeviceStatements.length > 0 ? html`
+              <div class="device-section">
+                <div class="device-section-header">Recomended</div>
+                <div class="device-section-divider"></div>
+                <div class="device-buttons-container">
+                  ${this.recommendedDeviceStatements.map((stmtKey) => {
+                    const statement = this.language.statements[stmtKey];
+                    return html`
+                      <editor-button
+                        @click="${() => this.handleDeviceStatementSelected(stmtKey)}"
+                        style="color: ${statement.foregroundColor}; background-color: ${statement.backgroundColor};">
+                        <editor-icon .icon="${icons[statement.icon]}"></editor-icon>
+                        <span>${statement.label}</span>
+                      </editor-button>
+                    `;
+                  })}
+                </div>
+              </div>
+            ` : nothing}
+
+            <!-- Other section -->
+            ${this.otherDeviceStatements.length > 0 ? html`
+              <div class="device-section">
+                <div class="device-section-header">Other</div>
+                <div class="device-section-divider"></div>
+                <div class="device-buttons-container">
+                  ${this.otherDeviceStatements.map((stmtKey) => {
+                    const statement = this.language.statements[stmtKey];
+                    return html`
+                      <editor-button
+                        @click="${() => this.handleDeviceStatementSelected(stmtKey)}"
+                        style="color: ${statement.foregroundColor}; background-color: ${statement.backgroundColor};">
+                        <editor-icon .icon="${icons[statement.icon]}"></editor-icon>
+                        <span>${statement.label}</span>
+                      </editor-button>
+                    `;
+                  })}
+                </div>
+              </div>
+            ` : nothing}
+
+            ${this.filteredDeviceStatements.length === 0 ? html`
+              <div class="no-devices-message">No matching devices found</div>
+            ` : nothing}
+          </div>
         </div>
       </editor-modal>
     `;

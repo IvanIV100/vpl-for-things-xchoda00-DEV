@@ -6,7 +6,7 @@ import { EditorModal } from './editor-modal';
 import { plusLg } from '../icons';
 import { consume } from '@lit/context';
 import { languageContext, programContext } from '../context/editor-context';
-import { Icon, Language, Program } from '@/index';
+import { analyzeBlock, Icon, Language, Program } from '@/index';
 import Types from '@vpl/types.ts';
 import * as icons from '@/editor/icons';
 import { v4 as uuidv4 } from 'uuid';
@@ -233,7 +233,10 @@ export class EditorUserProceduresModal extends LitElement {
       }
       return result; 
     };
-    const filteredSkeletonize = filterInvalidBlocks(skeletonizeCopy);
+    
+    const filteredSkeletonize1 = filterInvalidBlocks(skeletonizeCopy);
+    analyzeBlock(filteredSkeletonize1, this.language.statements, null);
+    const filteredSkeletonize = filterInvalidBlocks(filteredSkeletonize1);
 
     const parseBlock = (block: any[]) => {
       const modifiedBlock = [];
