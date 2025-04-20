@@ -325,14 +325,14 @@ export class GEStatement extends LitElement {
 
     //----------------------------
     this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
-      if (this.statement._uuid && this.editorMode === 'initialize') {
-        console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
-        const initProcEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
+      // if (this.statement._uuid && this.editorMode === 'initialize') {
+      //   console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
+      //   const initProcEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata); //parse the body
 
-        if (initProcEntry) {
-          this.updateDeviceMetadataValue();
-        }
-      }
+      //   if (initProcEntry) {
+      //     this.updateDeviceMetadataValue();
+      //   }
+      // }
     });
 
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
@@ -344,17 +344,17 @@ export class GEStatement extends LitElement {
 
   updateDeviceMetadataValue() {
     
-    if (!this.statement._uuid) return;
-    const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
-    const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
+    // if (!this.statement._uuid) return;
+    // const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
+    // const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
     
-    if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
-      const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
-      if (argValue !== undefined && argValue !== null) {
-        deviceEntry.values[0] = String(argValue);
-      }
-      return; 
-    }
+    // if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
+    //   const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
+    //   if (argValue !== undefined && argValue !== null) {
+    //     deviceEntry.values[0] = String(argValue);
+    //   }
+    //   return; 
+    // }
   }
 
   countDeviceTypeBlocks(block: any[]): number {
@@ -383,24 +383,25 @@ export class GEStatement extends LitElement {
   }
 
   countInitializedDevices(procedureUuid: string): number {
-    if (!this.program || !procedureUuid) return 0;
-    const procedureEntry = this.program.header.initializedProcedures.find(
-      entry => entry.uuid === procedureUuid
-    );
-    if (!procedureEntry) return 0;
-    const initializedCount = procedureEntry.devices.filter(device => {
-      if (device.deviceId === 'deviceType') {
-        return false;
-      }
+    // if (!this.program || !procedureUuid) return 0;
+    // const procedureEntry = this.program.header.initializedProcedures.find(
+    //   entry => entry.uuid === procedureUuid
+    // );
+    // if (!procedureEntry) return 0;
+    // const initializedCount = procedureEntry.devices.filter(device => {
+    //   if (device.deviceId === 'deviceType') {
+    //     return false;
+    //   }
 
-      if (this.language.statements[device.deviceId]) {
-        return true;
-      }
+    //   if (this.language.statements[device.deviceId]) {
+    //     return true;
+    //   }
 
-      return false;
-    }).length;
+    //   return false;
+    // }).length;
 
-    return initializedCount;
+    // return initializedCount;
+    return 0;
   }
 
   areAllDevicesInitialized(): boolean {
@@ -504,74 +505,74 @@ export class GEStatement extends LitElement {
 
   handleShowProcDef() {
     if (this.skeletonizeMode) return; 
-    const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
-    this.editorMode = isInitialization ? 'initialize' : 'edit';
-    if (isInitialization) {
-      this.restrainedMode = true;
-    }
+    //const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
+    // this.editorMode = isInitialization ? 'initialize' : 'edit';
+    // if (isInitialization) {
+    //   this.restrainedMode = true;
+    // }
 
-    const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
-    if (originalProcedureBlock) {
-      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
-      assignUuidToBlock(this.procedureBlockCopy);
-      if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
-        this.uuidMetadata = this.statement._uuid;
-        this.requestUpdate();
-      }
-      const initializedProcedures = this.program.header.initializedProcedures;
-      const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
+    // const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
+    // if (originalProcedureBlock) {
+    //   this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
+    //   assignUuidToBlock(this.procedureBlockCopy);
+    //   if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
+    //     this.uuidMetadata = this.statement._uuid;
+    //     this.requestUpdate();
+    //   }
+    //   const initializedProcedures = this.program.header.initializedProcedures;
+    //   const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
 
-      const parseBlock = (block: any[]) => {
-        block.forEach((stmt: any, index: number) => {
-          console.log('Current Statement:', stmt.id);
-          if (stmt.id === 'deviceType') {
-            const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
-            let deviceID: string = 'deviceType'; 
-            if (deviceEntry) {
-              deviceID = deviceEntry.deviceId || 'deviceType'; 
-              var deviceIDName = deviceID.split('.')[0];
+      // const parseBlock = (block: any[]) => {
+      //   block.forEach((stmt: any, index: number) => {
+      //     console.log('Current Statement:', stmt.id);
+      //     if (stmt.id === 'deviceType') {
+      //       const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
+      //       let deviceID: string = 'deviceType'; 
+      //       if (deviceEntry) {
+      //         deviceID = deviceEntry.deviceId || 'deviceType'; 
+      //         var deviceIDName = deviceID.split('.')[0];
 
-            if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType'; 
+      //       if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType'; 
               
-            } else {
-              deviceID = 'deviceType';
-            }
-            if  (deviceID === 'deviceType'){
-              const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
-              block[index] = {
-                ... this.language.statements[deviceID],
-                id: deviceID,
-                _uuid: stmt._uuid,
-                arguments: [
-                  {
-                    type: Types.string,
-                    value: deviceTypeValue,
-                    isInvalid: false,
-                  },
-                ],
-                isInvalid: false,
-              };
-            } else {
-              block[index] = {
-                ... this.language.statements[deviceID],
-                id: deviceID,
-                _uuid: stmt._uuid,
-                isInvalid: false,
-              };
-            }
+      //       } else {
+      //         deviceID = 'deviceType';
+      //       }
+      //       if  (deviceID === 'deviceType'){
+      //         const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
+      //         block[index] = {
+      //           ... this.language.statements[deviceID],
+      //           id: deviceID,
+      //           _uuid: stmt._uuid,
+      //           arguments: [
+      //             {
+      //               type: Types.string,
+      //               value: deviceTypeValue,
+      //               isInvalid: false,
+      //             },
+      //           ],
+      //           isInvalid: false,
+      //         };
+      //       } else {
+      //         block[index] = {
+      //           ... this.language.statements[deviceID],
+      //           id: deviceID,
+      //           _uuid: stmt._uuid,
+      //           isInvalid: false,
+      //         };
+      //       }
 
 
-          }
-          if (stmt.block && Array.isArray(stmt.block)) {
-            parseBlock(stmt.block); 
-          }
-        });
-      };
+      //     }
+      //     if (stmt.block && Array.isArray(stmt.block)) {
+      //       parseBlock(stmt.block); 
+      //     }
+      //   });
+      // };
 
-      parseBlock(this.procedureBlockCopy); 
+      // parseBlock(this.procedureBlockCopy); 
 
-      this.requestUpdate(); 
-    }
+    //   this.requestUpdate(); 
+    // }
     this.procModalRef.value.showModal();
   }
 

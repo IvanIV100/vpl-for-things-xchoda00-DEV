@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit, initDefaultArgumentType } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, initDefaultArgumentType } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -335,12 +335,12 @@ export class GeBlock extends LitElement {
           const isDeviceStatement = stmt.id === 'deviceType' || this.language.deviceList.includes(deviceName);
 
           if (isDeviceStatement) {
-            if (stmt.id === 'deviceType' && (stmt as AbstractStatementWithArgs).arguments?.[0]) {
+            if (stmt.id === 'deviceType' ) {
               const arg = (stmt as AbstractStatementWithArgs).arguments[0];
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
-                values: undefined
+                values: [String(arg.value)],
               });
             } else if (this.language.deviceList.includes(deviceName)) {
               const deviceStatement = {
@@ -384,12 +384,7 @@ export class GeBlock extends LitElement {
       };
       parseBlockForDevices(userProcedureBlock);
 
-      const newEntry: MetadataInit = {
-        uuid: addedStmt._uuid,
-        id: stmtKey,
-        devices: devices,
-      };
-      this.program.header.initializedProcedures.push(newEntry);
+      addedStmt.devices = devices;
     }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -459,12 +454,6 @@ export class GeBlock extends LitElement {
     }
     let statementIndex = e.detail.index;
     const stmtToRemove = this.block[statementIndex];
-
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-    }
 
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
@@ -707,40 +696,40 @@ export class GeBlock extends LitElement {
         });
         this.dispatchEvent(deviceSelectionEvent);
 
-        const metadataEntry = this.program.header.initializedProcedures.find(
-          (entry) => entry.uuid === this.tmpUUID
-        );
+        // const metadataEntry = this.program.header.initializedProcedures.find(
+        //   (entry) => entry.uuid === this.tmpUUID
+        // );
 
-        if (metadataEntry) {
-          const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
-          if (deviceEntry) {
-            deviceEntry.deviceId = stmtKey;
-            const langStatement = this.language.statements[stmtKey];
+        // if (metadataEntry) {
+        //   const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
+        //   if (deviceEntry) {
+        //     deviceEntry.deviceId = stmtKey;
+        //     const langStatement = this.language.statements[stmtKey];
 
             
 
-            if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
-              const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-              argDefs.forEach(argDef => {
-                const newArg = {
-                  type: argDef.type,
-                  value: null
-                };
-                if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-                  newArg.value = argDef.options[0].id;
-                } else {
-                  newArg.value = initDefaultArgumentType(argDef.type);
-                }
+        //     if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+        //       const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+        //       argDefs.forEach(argDef => {
+        //         const newArg = {
+        //           type: argDef.type,
+        //           value: null
+        //         };
+        //         if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+        //           newArg.value = argDef.options[0].id;
+        //         } else {
+        //           newArg.value = initDefaultArgumentType(argDef.type);
+        //         }
 
                 
-              });
-            }
-          } else {
-            console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);
-          }
-        } else {
-          console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
-        }
+        //       });
+        //     }
+        //   } else {
+        //     console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);
+        //   }
+        // } else {
+        //   console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
+        // }
 
         this.requestUpdate();
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
