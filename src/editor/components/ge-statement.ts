@@ -505,74 +505,76 @@ export class GEStatement extends LitElement {
 
   handleShowProcDef() {
     if (this.skeletonizeMode) return; 
-    //const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
-    // this.editorMode = isInitialization ? 'initialize' : 'edit';
-    // if (isInitialization) {
-    //   this.restrainedMode = true;
-    // }
+    //i need to parse the program.block and find a user procedure statement with the same uuid as the statement
+    const isInitialization = this.program.block.find((stmt) => stmt._uuid === this.statement._uuid);
+    this.editorMode = isInitialization ? 'initialize' : 'edit';
+    if (isInitialization) {
+      this.restrainedMode = true;
+    }
 
-    // const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
-    // if (originalProcedureBlock) {
-    //   this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
-    //   assignUuidToBlock(this.procedureBlockCopy);
-    //   if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
-    //     this.uuidMetadata = this.statement._uuid;
-    //     this.requestUpdate();
-    //   }
-    //   const initializedProcedures = this.program.header.initializedProcedures;
-    //   const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
+    const originalProcedureBlock = this.program.header.userProcedures[this.statement.id];
 
-      // const parseBlock = (block: any[]) => {
-      //   block.forEach((stmt: any, index: number) => {
-      //     console.log('Current Statement:', stmt.id);
-      //     if (stmt.id === 'deviceType') {
-      //       const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
-      //       let deviceID: string = 'deviceType'; 
-      //       if (deviceEntry) {
-      //         deviceID = deviceEntry.deviceId || 'deviceType'; 
-      //         var deviceIDName = deviceID.split('.')[0];
+    if (originalProcedureBlock) {
+      this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
+      assignUuidToBlock(this.procedureBlockCopy);
+      
+      this.uuidMetadata = this.statement._uuid;
+      this.requestUpdate();
+      
+      const procedureEntry = isInitialization;
+      console.log('Procedure Entry:', procedureEntry);
 
-      //       if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType'; 
+      const parseBlock = (block: any[]) => {
+        block.forEach((stmt: any, index: number) => {
+          console.log('Current Statement:', stmt.id);
+          if (stmt.id === 'deviceType') {
+            const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
+            let deviceID: string = 'deviceType'; 
+            if (deviceEntry) {
+              deviceID = deviceEntry.deviceId || 'deviceType'; 
+              var deviceIDName = deviceID.split('.')[0];
+
+            if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType'; 
               
-      //       } else {
-      //         deviceID = 'deviceType';
-      //       }
-      //       if  (deviceID === 'deviceType'){
-      //         const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
-      //         block[index] = {
-      //           ... this.language.statements[deviceID],
-      //           id: deviceID,
-      //           _uuid: stmt._uuid,
-      //           arguments: [
-      //             {
-      //               type: Types.string,
-      //               value: deviceTypeValue,
-      //               isInvalid: false,
-      //             },
-      //           ],
-      //           isInvalid: false,
-      //         };
-      //       } else {
-      //         block[index] = {
-      //           ... this.language.statements[deviceID],
-      //           id: deviceID,
-      //           _uuid: stmt._uuid,
-      //           isInvalid: false,
-      //         };
-      //       }
+            } else {
+              deviceID = 'deviceType';
+            }
+            if  (deviceID === 'deviceType'){
+              const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
+              block[index] = {
+                ... this.language.statements[deviceID],
+                id: deviceID,
+                _uuid: stmt._uuid,
+                arguments: [
+                  {
+                    type: Types.string,
+                    value: deviceTypeValue,
+                    isInvalid: false,
+                  },
+                ],
+                isInvalid: false,
+              };
+            } else {
+              block[index] = {
+                ... this.language.statements[deviceID],
+                id: deviceID,
+                _uuid: stmt._uuid,
+                isInvalid: false,
+              };
+            }
 
 
-      //     }
-      //     if (stmt.block && Array.isArray(stmt.block)) {
-      //       parseBlock(stmt.block); 
-      //     }
-      //   });
-      // };
+          }
+          if (stmt.block && Array.isArray(stmt.block)) {
+            parseBlock(stmt.block); 
+          }
+        });
+      };
 
-      // parseBlock(this.procedureBlockCopy); 
+      parseBlock(this.procedureBlockCopy); 
 
-    //   this.requestUpdate(); 
-    // }
+      this.requestUpdate(); 
+    }
     this.procModalRef.value.showModal();
   }
 
