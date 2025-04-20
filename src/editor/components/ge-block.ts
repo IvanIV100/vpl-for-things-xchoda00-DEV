@@ -696,40 +696,36 @@ export class GeBlock extends LitElement {
         });
         this.dispatchEvent(deviceSelectionEvent);
 
-        // const metadataEntry = this.program.header.initializedProcedures.find(
-        //   (entry) => entry.uuid === this.tmpUUID
-        // );
+        const metadataEntry = this.program.block.find((stmt) => stmt._uuid === this.tmpUUID);
 
-        // if (metadataEntry) {
-        //   const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
-        //   if (deviceEntry) {
-        //     deviceEntry.deviceId = stmtKey;
-        //     const langStatement = this.language.statements[stmtKey];
+        if (metadataEntry) {
+          const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
+          if (deviceEntry) {
+            deviceEntry.deviceId = stmtKey;
+            const langStatement = this.language.statements[stmtKey];
+            if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+              const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+              const defaultValues: string[] = [];
 
-            
+              argDefs.forEach(argDef => {
+                let defaultValue: string;
+                if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                  defaultValue = String(argDef.options[0].id);
+                } else {
+                  defaultValue = String(initDefaultArgumentType(argDef.type));
+                }
+                defaultValues.push(defaultValue);
+              });
 
-        //     if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
-        //       const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-        //       argDefs.forEach(argDef => {
-        //         const newArg = {
-        //           type: argDef.type,
-        //           value: null
-        //         };
-        //         if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-        //           newArg.value = argDef.options[0].id;
-        //         } else {
-        //           newArg.value = initDefaultArgumentType(argDef.type);
-        //         }
-
-                
-        //       });
-        //     }
-        //   } else {
-        //     console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);
-        //   }
-        // } else {
-        //   console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
-        // }
+              // Update the values array in the device metadata
+              deviceEntry.values = defaultValues;
+            }
+          } else {
+            console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);
+          }
+        } else {
+          console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
+        }
 
         this.requestUpdate();
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
