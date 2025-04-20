@@ -136,7 +136,11 @@ export class GeStatementArgument extends LitElement {
       composed: true,
     });
     this.dispatchEvent(event);
-    
+    const eventT = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(eventT);
   }
 
 
