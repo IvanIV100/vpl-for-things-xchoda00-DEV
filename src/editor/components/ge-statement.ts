@@ -351,12 +351,7 @@ export class GEStatement extends LitElement {
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
       if (argValue !== undefined && argValue !== null) {
-        deviceEntry.value = String(argValue);
-        if (deviceEntry.statement &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments &&
-            (deviceEntry.statement as AbstractStatementWithArgs).arguments[0]) {
-          (deviceEntry.statement as AbstractStatementWithArgs).arguments[0].value = argValue;
-        }
+        deviceEntry.values[0] = String(argValue);
       }
       return; 
     }
@@ -541,8 +536,7 @@ export class GEStatement extends LitElement {
             } else {
               deviceID = 'deviceType';
             }
-            if  (deviceEntry.statement.id === 'deviceType'){
-              deviceID = 'deviceType';
+            if  (deviceID === 'deviceType'){
               const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
               block[index] = {
                 ... this.language.statements[deviceID],

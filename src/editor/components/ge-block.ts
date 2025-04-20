@@ -340,8 +340,7 @@ export class GeBlock extends LitElement {
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
-                statement: stmt,
-                value: undefined
+                values: undefined
               });
             } else if (this.language.deviceList.includes(deviceName)) {
               const deviceStatement = {
@@ -374,8 +373,7 @@ export class GeBlock extends LitElement {
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: stmt.id,
-                statement: deviceStatement,
-                value: undefined
+                values: undefined
               });
             }
           }
@@ -719,10 +717,7 @@ export class GeBlock extends LitElement {
             deviceEntry.deviceId = stmtKey;
             const langStatement = this.language.statements[stmtKey];
 
-            deviceEntry.statement = {
-              ...selectedStatement,
-              arguments: []
-            };
+            
 
             if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
               const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
@@ -737,12 +732,8 @@ export class GeBlock extends LitElement {
                   newArg.value = initDefaultArgumentType(argDef.type);
                 }
 
-                (deviceEntry.statement as AbstractStatementWithArgs).arguments.push(newArg);
+                
               });
-            }
-
-            if (deviceEntry.value) {
-              deviceEntry.value = undefined;
             }
           } else {
             console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);

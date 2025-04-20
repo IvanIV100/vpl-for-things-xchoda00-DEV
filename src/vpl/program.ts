@@ -152,8 +152,7 @@ export function assignUuidToBlock(block: Block) {
 export type DeviceMetadata = {
   uuid: string;
   deviceId: string;
-  statement: ProgramStatement; // Store the complete statement with arguments
-  value?: string; // Optional attribute to store the selected value of the device
+  values: string[]; 
 };
 
 export type MetadataInit = {
@@ -169,7 +168,7 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
-      initializedProcedures: [], // Update initializedProcedures to use MetadataInit type
+      initializedProcedures: [], 
       skeletonize: [],
       skeletonize_uuid: [],
       selected_uuids: [],
