@@ -333,6 +333,7 @@ export class GEStatement extends LitElement {
           this.updateDeviceMetadataValue();
         }
       }
+      this.requestUpdate();
     });
 
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
@@ -346,13 +347,13 @@ export class GEStatement extends LitElement {
     if (!this.statement._uuid) return;
     const procInitEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
     const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
-    
+
     if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
       const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
       if (argValue !== undefined && argValue !== null) {
         deviceEntry.values[0] = String(argValue);
       }
-      return; 
+      return;
     }
   }
 
@@ -384,7 +385,7 @@ export class GEStatement extends LitElement {
   countInitializedDevices(procedureUuid: string): number {
     if (!this.program || !procedureUuid) return 0;
     const procedureEntry = this.program.block.find( entry => entry._uuid === procedureUuid);
-    
+
     if (!procedureEntry) return 0;
     const initializedCount = procedureEntry.devices.filter(device => {
       if (device.deviceId === 'deviceType') {
@@ -501,7 +502,7 @@ export class GEStatement extends LitElement {
   }
 
   handleShowProcDef() {
-    if (this.skeletonizeMode) return; 
+    if (this.skeletonizeMode) return;
     //i need to parse the program.block and find a user procedure statement with the same uuid as the statement
     const isInitialization = this.program.block.find((stmt) => stmt._uuid === this.statement._uuid);
     this.editorMode = isInitialization ? 'initialize' : 'edit';
@@ -514,10 +515,10 @@ export class GEStatement extends LitElement {
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
-      
+
       this.uuidMetadata = this.statement._uuid;
       this.requestUpdate();
-      
+
       const procedureEntry = isInitialization;
       console.log('Procedure Entry:', procedureEntry);
 
@@ -526,17 +527,17 @@ export class GEStatement extends LitElement {
           console.log('Current Statement:', stmt.id);
           if (stmt.id === 'deviceType') {
             const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
-            let deviceID: string = 'deviceType'; 
+            let deviceID = deviceEntry?.deviceId || 'deviceType';
             if (deviceEntry) {
-              deviceID = deviceEntry.deviceId || 'deviceType'; 
+
               var deviceIDName = deviceID.split('.')[0];
 
-            if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType'; 
-              
+              if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType';
+
             } else {
               deviceID = 'deviceType';
             }
-            if  (deviceID === 'deviceType'){
+            if (deviceID === 'deviceType') {
               const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
               block[index] = {
                 ... this.language.statements[deviceID],
@@ -546,31 +547,65 @@ export class GEStatement extends LitElement {
                   {
                     type: Types.string,
                     value: deviceTypeValue,
-                    isInvalid: false,
                   },
                 ],
                 isInvalid: false,
               };
+
             } else {
+              // Get the language statement definition to determine arguments structure
+              const langStatement = this.language.statements[deviceID];
+              const newArguments = [];
+
+              // If the device has arguments defined in the language
+              if (langStatement && (langStatement as any).arguments) {
+                const argDefs = (langStatement as any).arguments;
+
+                // Create arguments with values from device entry if available
+                argDefs.forEach((argDef: any, argIndex: number) => {
+                  const newArg: any = {
+                    type: argDef.type,
+                    isInvalid: false
+                  };
+
+                  // Set the value from device entry values if available
+                  if (deviceEntry && deviceEntry.values && deviceEntry.values[argIndex] !== undefined) {
+                    if (argDef.type === Types.number || argDef.type === 'num_opt') {
+                      newArg.value = Number(deviceEntry.values[argIndex]);
+                    } else {
+                      newArg.value = deviceEntry.values[argIndex];
+                    }
+                  } else if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+                    // Default to first option if no value is available
+                    newArg.value = argDef.options[0].id;
+                  } else {
+                    // Use default value for the argument type
+                    newArg.value = initDefaultArgumentType(argDef.type);
+                  }
+
+                  newArguments.push(newArg);
+                });
+              }
+
               block[index] = {
                 ... this.language.statements[deviceID],
                 id: deviceID,
                 _uuid: stmt._uuid,
+                arguments: newArguments,
                 isInvalid: false,
               };
+              console.log('Modified Statement with values:', block[index]);
             }
-
-
           }
           if (stmt.block && Array.isArray(stmt.block)) {
-            parseBlock(stmt.block); 
+            parseBlock(stmt.block);
           }
         });
       };
 
-      parseBlock(this.procedureBlockCopy); 
+      parseBlock(this.procedureBlockCopy);
 
-      this.requestUpdate(); 
+      this.requestUpdate();
     }
     this.procModalRef.value.showModal();
   }
