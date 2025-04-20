@@ -428,7 +428,11 @@ export class GeBlock extends LitElement {
       };
       parseBlockForDevices(userProcedureBlock);
 
+      // Store devices directly in the statement
       addedStmt.devices = devices;
+
+      // Update the procedures initialization status
+      this.program.updateProceduresInitializedStatus();
     }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -497,6 +501,14 @@ export class GeBlock extends LitElement {
       return;
     }
     let statementIndex = e.detail.index;
+    const stmtToRemove = this.block[statementIndex];
+
+    // If this is a user procedure, update the initialization status
+    if (stmtToRemove && this.language.statements[stmtToRemove.id]?.isUserProcedure) {
+
+      // Update the procedures initialization status
+      this.program.updateProceduresInitializedStatus();
+    }
 
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
@@ -774,6 +786,9 @@ export class GeBlock extends LitElement {
           console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
         }
 
+
+        // Update the procedures initialization status
+        this.program.updateProceduresInitializedStatus();
 
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,

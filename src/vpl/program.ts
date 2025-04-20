@@ -165,6 +165,8 @@ export class Program {
       skeletonize: [],
       skeletonize_uuid: [],
       //selected_uuids: [],
+      allProceduresInitialized: true, // Default to true (no procedures means all are initialized)
+      initializedProcedures: [], // Initialize the array for backward compatibility
     };
     this.block = [];
   }
@@ -184,6 +186,9 @@ export class Program {
     this.header.userVariables = programExport.header.userVariables;
 
     this.block = programExport.block;
+
+    // Update the initialization status after loading a program
+    this.updateProceduresInitializedStatus();
   }
 
   exportProgramBlock(block: Block) {
@@ -230,6 +235,7 @@ export class Program {
       header: {
         userVariables: this.header.userVariables,
         userProcedures: {},
+        allProceduresInitialized: this.header.allProceduresInitialized
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -241,6 +247,90 @@ export class Program {
     programExport.header.userProcedures = proceduresCopy;
 
     return programExport;
+  }
+
+  updateProceduresInitializedStatus() {
+    if (Object.keys(this.header.userProcedures).length === 0) {
+      this.header.allProceduresInitialized = true;
+      return;
+    }
+
+    const procedureStatements = this.findAllUserProcedureStatements(this.block);
+
+    if (procedureStatements.length === 0) {
+      this.header.allProceduresInitialized = false;
+      return;
+    }
+
+    let allInitialized = true;
+    for (const stmt of procedureStatements) {
+      const procId = stmt.id;
+      const procBlock = this.header.userProcedures[procId];
+      if (!procBlock) continue;
+
+      const totalDeviceCount = this.countDeviceTypeBlocks(procBlock);
+      const initializedCount = this.countInitializedDevices(stmt._uuid);
+
+      if (initializedCount < totalDeviceCount) {
+        allInitialized = false;
+        break;
+      }
+    }
+
+    this.header.allProceduresInitialized = allInitialized;
+  }
+
+  // Find all user procedure statements in a block (recursively)
+  findAllUserProcedureStatements(block: Block): ProgramStatement[] {
+    const result: ProgramStatement[] = [];
+
+    const findProcedures = (block: Block) => {
+      for (const stmt of block) {
+        if (this.header.userProcedures[stmt.id]) {
+          result.push(stmt);
+        }
+
+        if ((stmt as CompoundStatement).block) {
+          findProcedures((stmt as CompoundStatement).block);
+        }
+      }
+    };
+
+    findProcedures(block);
+    return result;
+  }
+
+  // Count device type blocks in a procedure
+  countDeviceTypeBlocks(block: Block): number {
+    let count = 0;
+
+    const countDevicesInBlock = (blockToCount: Block) => {
+      if (!blockToCount || !Array.isArray(blockToCount)) return;
+
+      for (const stmt of blockToCount) {
+        if (stmt.id === 'deviceType') {
+          count++;
+        }
+        if ((stmt as CompoundStatement).block && Array.isArray((stmt as CompoundStatement).block)) {
+          countDevicesInBlock((stmt as CompoundStatement).block);
+        }
+      }
+    };
+
+    countDevicesInBlock(block);
+    return count;
+  }
+
+  // Count initialized devices for a procedure
+  countInitializedDevices(procedureUuid: string): number {
+    if (!procedureUuid) return 0;
+
+    // Find the procedure entry in the block
+    const procedureEntry = this.block.find(entry => entry._uuid === procedureUuid);
+    if (!procedureEntry || !procedureEntry.devices) return 0;
+
+    // Count initialized devices (excluding deviceType)
+    return procedureEntry.devices.filter(device => device.deviceId !== 'deviceType').length;
   }
 
   addStatement(block: Block, statement: stmt) {
@@ -284,6 +374,9 @@ export class Program {
     }
 
     block.push(resultStatement);
+
+    // Update the initialization status after adding a statement
+    this.updateProceduresInitializedStatus();
   }
 }
 
@@ -351,6 +444,8 @@ export type Header = {
   skeletonize: [];
   skeletonize_uuid: string[];
   //selected_uuids: string[];
+  allProceduresInitialized: boolean; // Flag to track if all user procedures are initialized
+  initializedProcedures: any[]; // For backward compatibility with existing code
 };
 
 export type UserVariable = {

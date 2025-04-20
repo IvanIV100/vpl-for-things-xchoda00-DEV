@@ -349,12 +349,7 @@ export class GEStatement extends LitElement {
         if (this.procModalRef.value) {
           this.procModalRef.value.hideModal();
         }
-
-        // Use a small timeout to ensure the modal is properly closed
-        setTimeout(() => {
-          // Call handleShowProcDef to properly reload all values and reopen the modal
-          this.handleShowProcDef();
-        }, 1);
+        this.handleShowProcDef();
       }
     });
   }

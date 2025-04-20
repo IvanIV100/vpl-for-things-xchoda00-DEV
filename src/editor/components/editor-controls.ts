@@ -339,6 +339,30 @@ export class EditorControls extends LitElement {
         background-color: var(--blue-600) !important;
         transform: translateY(-1px);
       }
+
+      .procedure-status-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 5px;
+      }
+
+      .procedure-status-indicator.initialized {
+        background-color: var(--green-100);
+        color: var(--green-700);
+        border: 1px solid var(--green-300);
+      }
+
+      .procedure-status-indicator.not-initialized {
+        background-color: var(--red-100);
+        color: var(--red-700);
+        border: 1px solid var(--red-300);
+      }
     `,
   ];
 
@@ -801,9 +825,9 @@ export class EditorControls extends LitElement {
     }
   }
 
- 
 
-  
+
+
 
   userVariablesModalTemplate() {
     return html`
@@ -1201,6 +1225,12 @@ export class EditorControls extends LitElement {
               <editor-button @click="${() => this.userProceduresModalRef.value.showModal()}" class="control-button">
                 <editor-icon .icon="${braces}" .width="${18}" .height="${18}" title="Procedures"></editor-icon>
                 <span>Procedures</span>
+                ${Object.keys(this.program?.header.userProcedures || {}).length > 0 ? html`
+                  <span class="procedure-status-indicator ${this.program?.header.allProceduresInitialized ? 'initialized' : 'not-initialized'}"
+                    title="${this.program?.header.allProceduresInitialized ? 'All procedures initialized' : 'Some procedures not initialized'}">
+                    ${this.program?.header.allProceduresInitialized ? '✓' : '!'}
+                  </span>
+                ` : nothing}
               </editor-button>
             </div>
             <div style="border: 1px solid black; padding: 10px; display: inline-block;">
