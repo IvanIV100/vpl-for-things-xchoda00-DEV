@@ -670,6 +670,7 @@ export class EditorControls extends LitElement {
         header: {
           userVariables: this.program?.header.userVariables,
           userProcedures: this.program?.header.userProcedures,
+          initializedProcedures: this.program?.header.initializedProcedures || [],
         },
         block: this.program?.block,
       };
@@ -800,9 +801,9 @@ export class EditorControls extends LitElement {
     }
   }
 
+ 
 
-
-
+  
 
   userVariablesModalTemplate() {
     return html`

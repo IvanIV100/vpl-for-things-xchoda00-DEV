@@ -152,10 +152,14 @@ export function assignUuidToBlock(block: Block) {
 export type DeviceMetadata = {
   uuid: string;
   deviceId: string;
-  values: string[];
+  values: string[]; 
 };
 
-// MetadataInit type removed as it's no longer needed
+export type MetadataInit = {
+  uuid: string;
+  id: string;
+  devices: DeviceMetadata[]; // Store complete device statements
+};
 export class Program {
   header: Header;
   block: Block;
@@ -164,6 +168,7 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
+      initializedProcedures: [], 
       skeletonize: [],
       skeletonize_uuid: [],
       selected_uuids: [],
@@ -184,6 +189,12 @@ export class Program {
 
     this.header.userProcedures = programExport.header.userProcedures;
     this.header.userVariables = programExport.header.userVariables;
+
+    // Handle initializedProcedures if present in the imported program
+    if (programExport.header.initializedProcedures) {
+      this.header.initializedProcedures = programExport.header.initializedProcedures;
+    }
+
     this.block = programExport.block;
   }
 
@@ -206,10 +217,6 @@ export class Program {
         if (stmt.isInvalid) {
           delete stmt.isInvalid;
         }
-
-        // Keep deviceMetadata for export
-        // We don't need to remove UUIDs from deviceMetadata as they are needed for reference
-
         if ((stmt as AbstractStatementWithArgs).arguments) {
           for (let arg of (stmt as AbstractStatementWithArgs).arguments) {
             if (arg.type === Types.boolean_expression) {
@@ -235,6 +242,7 @@ export class Program {
       header: {
         userVariables: this.header.userVariables,
         userProcedures: {},
+        initializedProcedures: this.header.initializedProcedures || [], // Include initializedProcedures
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -346,6 +354,7 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
+  initializedProcedures: MetadataInit[]; // Update initializedProcedures to use MetadataInit type
   skeletonize: [];
   skeletonize_uuid: string[];
   selected_uuids: string[];
@@ -372,7 +381,6 @@ export type AbstractStatement = {
   _uuid?: string;
   id: string;
   isInvalid?: boolean;
-  deviceMetadata?: DeviceMetadata[];
 };
 
 export type AbstractStatementWithArgs = AbstractStatement & {
