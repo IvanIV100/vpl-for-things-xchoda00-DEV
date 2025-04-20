@@ -49,4 +49,6 @@ export const procedureEditorCustomEvent = {
 
 export const deviceMetadataCustomEvent = {
   VALUE_CHANGED: 'device-metadata-value-changed',
+  DEVICE_SELECTED: 'device-statement-selected',
+  REOPEN_PROCEDURE_MODAL: 'reopen-procedure-modal',
 } as const;

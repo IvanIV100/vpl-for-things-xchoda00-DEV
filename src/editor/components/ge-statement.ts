@@ -341,6 +341,22 @@ export class GEStatement extends LitElement {
       this.editorMode = 'edit';
       this.requestUpdate();
     });
+
+    this.addEventListener(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, (e: CustomEvent) => {
+      if (this.language?.statements[this.statement.id]?.isUserProcedure &&
+          this.statement._uuid === e.detail.procedureUuid) {
+        // Close the modal silently
+        if (this.procModalRef.value) {
+          this.procModalRef.value.hideModal();
+        }
+
+        // Use a small timeout to ensure the modal is properly closed
+        setTimeout(() => {
+          // Call handleShowProcDef to properly reload all values and reopen the modal
+          this.handleShowProcDef();
+        }, 1);
+      }
+    });
   }
 
   updateDeviceMetadataValue() {

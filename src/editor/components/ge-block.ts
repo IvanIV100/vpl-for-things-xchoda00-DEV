@@ -3,7 +3,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
 import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, initDefaultArgumentType } from '@/vpl/program';
-import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
+import { graphicalEditorCustomEvent, statementCustomEvent, deviceMetadataCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
   CompoundLanguageStatementWithArgs,
@@ -774,7 +774,7 @@ export class GeBlock extends LitElement {
           console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
         }
 
-        this.requestUpdate();
+
         const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
           bubbles: true,
           composed: true,
@@ -785,6 +785,16 @@ export class GeBlock extends LitElement {
         console.warn(`Clicked block not found in the block array.`);
       }
     }
+
+    // Dispatch custom event to reopen the user procedure initialization modal
+    const reopenModalEvent = new CustomEvent(deviceMetadataCustomEvent.REOPEN_PROCEDURE_MODAL, {
+      bubbles: true,
+      composed: true,
+      detail: {
+        procedureUuid: this.tmpUUID
+      }
+    });
+    this.dispatchEvent(reopenModalEvent);
   }
 
   updated(changedProperties: Map<string, any>) {
