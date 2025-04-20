@@ -322,9 +322,48 @@ export class GeBlock extends LitElement {
     };
 
     this.program.addStatement(this.block, newStatement);
+    const addedStmt = this.block[this.block.length - 1];
+
+    // Check if this is a device statement and initialize its metadata
+    const deviceName = stmtKey.split('.')[0];
+    const isDeviceStatement = stmtKey === 'deviceType' || this.language.deviceList.includes(deviceName);
+
+    // if (isDeviceStatement) {
+    //   // Initialize device metadata for the newly added device statement
+    //   if (!addedStmt.devices) {
+    //     addedStmt.devices = [];
+    //   }
+
+    //   const langStatement = this.language.statements[stmtKey];
+    //   if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
+    //     const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
+    //     const defaultValues: string[] = [];
+
+    //     // Initialize argument values directly in the statement
+    //     if ((addedStmt as AbstractStatementWithArgs).arguments) {
+    //       argDefs.forEach((argDef, index) => {
+    //         if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
+    //           const defaultValue = argDef.options[0].id;
+    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
+    //           defaultValues.push(String(defaultValue));
+    //         } else {
+    //           const defaultValue = initDefaultArgumentType(argDef.type);
+    //           (addedStmt as AbstractStatementWithArgs).arguments[index].value = defaultValue;
+    //           defaultValues.push(String(defaultValue));
+    //         }
+    //       });
+    //     }
+
+    //     // Add device metadata entry
+    //     addedStmt.devices.push({
+    //       uuid: addedStmt._uuid,
+    //       deviceId: stmtKey,
+    //       values: defaultValues
+    //     });
+    //   }
+    // }
 
     if (this.language.statements[stmtKey].isUserProcedure) {
-      const addedStmt = this.block[this.block.length - 1];
       const userProcedureBlock = this.program.header.userProcedures[stmtKey];
       assignUuidToBlock(userProcedureBlock);
 
@@ -348,6 +387,8 @@ export class GeBlock extends LitElement {
                 arguments: []
               };
               const langStatement = this.language.statements[stmt.id];
+              const deviceValues: string[] = [];
+
               if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
                 const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
 
@@ -359,12 +400,15 @@ export class GeBlock extends LitElement {
 
                   if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
                     newArg.value = argDef.options[0].id;
+                    deviceValues.push(String(argDef.options[0].id));
                   } else {
                     newArg.value = initDefaultArgumentType(argDef.type);
+                    deviceValues.push(String(newArg.value));
                   }
                   if ((stmt as AbstractStatementWithArgs).arguments &&
                       (stmt as AbstractStatementWithArgs).arguments[index]) {
                     newArg.value = (stmt as AbstractStatementWithArgs).arguments[index].value;
+                    deviceValues[index] = String(newArg.value);
                   }
                   deviceStatement.arguments.push(newArg);
                 });
@@ -373,7 +417,7 @@ export class GeBlock extends LitElement {
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: stmt.id,
-                values: undefined
+                values: deviceValues
               });
             }
           }
@@ -453,7 +497,6 @@ export class GeBlock extends LitElement {
       return;
     }
     let statementIndex = e.detail.index;
-    const stmtToRemove = this.block[statementIndex];
 
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
@@ -702,6 +745,7 @@ export class GeBlock extends LitElement {
           const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
           if (deviceEntry) {
             deviceEntry.deviceId = stmtKey;
+
             const langStatement = this.language.statements[stmtKey];
             if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
               const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
@@ -719,6 +763,9 @@ export class GeBlock extends LitElement {
 
               // Update the values array in the device metadata
               deviceEntry.values = defaultValues;
+            } else {
+              // If the new device has no arguments, reset the values array to empty
+              deviceEntry.values = [];
             }
           } else {
             console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);

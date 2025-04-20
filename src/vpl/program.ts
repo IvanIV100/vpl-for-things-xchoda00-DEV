@@ -152,7 +152,7 @@ export function assignUuidToBlock(block: Block) {
 export type DeviceMetadata = {
   uuid: string;
   deviceId: string;
-  values: string[]; 
+  values: string[];
 };
 export class Program {
   header: Header;
@@ -229,7 +229,7 @@ export class Program {
     let programExport = {
       header: {
         userVariables: this.header.userVariables,
-        userProcedures: {}, 
+        userProcedures: {},
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -248,9 +248,18 @@ export class Program {
 
     function initArgs() {
       for (let arg of statement.arguments) {
+        let defaultValue: string | number | boolean | Expression[] | Devices[] | null;
+        if (arg.type === 'str_opt' || arg.type === 'num_opt') {
+          // For select options, use the first option as default
+          defaultValue = arg.options && arg.options.length > 0 ? arg.options[0].id : null;
+        } else {
+          // For other types, use the default value based on type
+          defaultValue = initDefaultArgumentType(arg.type);
+        }
+
         resultStatement['arguments'].push({
           type: arg.type,
-          value: initDefaultArgumentType(arg.type)
+          value: defaultValue
         });
       }
     }
