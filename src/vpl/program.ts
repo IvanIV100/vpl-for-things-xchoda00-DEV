@@ -154,12 +154,6 @@ export type DeviceMetadata = {
   deviceId: string;
   values: string[]; 
 };
-
-export type MetadataInit = {
-  uuid: string;
-  id: string;
-  devices: DeviceMetadata[]; // Store complete device statements
-};
 export class Program {
   header: Header;
   block: Block;
@@ -168,10 +162,9 @@ export class Program {
     this.header = {
       userVariables: {},
       userProcedures: {},
-      initializedProcedures: [], 
       skeletonize: [],
       skeletonize_uuid: [],
-      selected_uuids: [],
+      //selected_uuids: [],
     };
     this.block = [];
   }
@@ -189,11 +182,6 @@ export class Program {
 
     this.header.userProcedures = programExport.header.userProcedures;
     this.header.userVariables = programExport.header.userVariables;
-
-    // Handle initializedProcedures if present in the imported program
-    if (programExport.header.initializedProcedures) {
-      this.header.initializedProcedures = programExport.header.initializedProcedures;
-    }
 
     this.block = programExport.block;
   }
@@ -241,8 +229,7 @@ export class Program {
     let programExport = {
       header: {
         userVariables: this.header.userVariables,
-        userProcedures: {},
-        initializedProcedures: this.header.initializedProcedures || [], // Include initializedProcedures
+        userProcedures: {}, 
       },
       block: this.exportProgramBlock(this.block),
     };
@@ -255,8 +242,6 @@ export class Program {
 
     return programExport;
   }
-
-  // exportLinearizedProgram method has been removed
 
   addStatement(block: Block, statement: stmt) {
     let resultStatement: any = {};
@@ -354,10 +339,9 @@ export type Header = {
   userProcedures: {
     [id: string]: Block;
   };
-  initializedProcedures: MetadataInit[]; // Update initializedProcedures to use MetadataInit type
   skeletonize: [];
   skeletonize_uuid: string[];
-  selected_uuids: string[];
+  //selected_uuids: string[];
 };
 
 export type UserVariable = {
@@ -381,6 +365,7 @@ export type AbstractStatement = {
   _uuid?: string;
   id: string;
   isInvalid?: boolean;
+  devices?: DeviceMetadata[];
 };
 
 export type AbstractStatementWithArgs = AbstractStatement & {
