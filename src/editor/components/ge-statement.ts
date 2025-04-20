@@ -327,11 +327,7 @@ export class GEStatement extends LitElement {
     this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
       if (this.statement._uuid && this.editorMode === 'initialize') {
         console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
-        const initProcEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
-
-        if (initProcEntry) {
-          this.updateDeviceMetadataValue();
-        }
+        this.updateDeviceMetadataValue();
       }
     });
 
@@ -343,17 +339,24 @@ export class GEStatement extends LitElement {
   }
 
   updateDeviceMetadataValue() {
-    
     if (!this.statement._uuid) return;
-    const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
-    const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
-    
-    if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
-      const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
-      if (argValue !== undefined && argValue !== null) {
-        deviceEntry.values[0] = String(argValue);
+
+    // Find the parent procedure statement
+    const parentProcedureStmt = this.program.block.find(stmt => stmt._uuid === this.uuidMetadata);
+
+    // Update deviceMetadata in the statement
+    if (parentProcedureStmt && parentProcedureStmt.deviceMetadata) {
+      const deviceEntry = parentProcedureStmt.deviceMetadata.find(device => device.uuid === this.statement._uuid);
+      if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
+        const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
+        if (argValue !== undefined && argValue !== null) {
+          // Initialize values array if needed
+          if (!deviceEntry.values) {
+            deviceEntry.values = [];
+          }
+          deviceEntry.values[0] = String(argValue);
+        }
       }
-      return; 
     }
   }
 
@@ -384,23 +387,26 @@ export class GEStatement extends LitElement {
 
   countInitializedDevices(procedureUuid: string): number {
     if (!this.program || !procedureUuid) return 0;
-    const procedureEntry = this.program.header.initializedProcedures.find(
-      entry => entry.uuid === procedureUuid
-    );
-    if (!procedureEntry) return 0;
-    const initializedCount = procedureEntry.devices.filter(device => {
-      if (device.deviceId === 'deviceType') {
+
+    // Find the procedure statement and use its deviceMetadata
+    const procedureStmt = this.program.block.find(stmt => stmt._uuid === procedureUuid);
+    if (procedureStmt && procedureStmt.deviceMetadata) {
+      const initializedCount = procedureStmt.deviceMetadata.filter(device => {
+        if (device.deviceId === 'deviceType') {
+          return false;
+        }
+
+        if (this.language.statements[device.deviceId]) {
+          return true;
+        }
+
         return false;
-      }
+      }).length;
 
-      if (this.language.statements[device.deviceId]) {
-        return true;
-      }
+      return initializedCount;
+    }
 
-      return false;
-    }).length;
-
-    return initializedCount;
+    return 0;
   }
 
   areAllDevicesInitialized(): boolean {
@@ -503,8 +509,10 @@ export class GEStatement extends LitElement {
   }
 
   handleShowProcDef() {
-    if (this.skeletonizeMode) return; 
-    const isInitialization = this.program.header.initializedProcedures.some(entry => entry.uuid === this.statement._uuid);
+    if (this.skeletonizeMode) return;
+
+    // Check if this is an initialization by looking for deviceMetadata
+    const isInitialization = this.statement.deviceMetadata && this.statement.deviceMetadata.length > 0;
     this.editorMode = isInitialization ? 'initialize' : 'edit';
     if (isInitialization) {
       this.restrainedMode = true;
@@ -514,63 +522,62 @@ export class GEStatement extends LitElement {
     if (originalProcedureBlock) {
       this.procedureBlockCopy = JSON.parse(JSON.stringify(originalProcedureBlock));
       assignUuidToBlock(this.procedureBlockCopy);
-      if (this.program.header.initializedProcedures.find((entry) => entry.uuid === this.statement._uuid)) {
+
+      if (isInitialization) {
         this.uuidMetadata = this.statement._uuid;
         this.requestUpdate();
+
+        // Update device blocks based on deviceMetadata
+        const parseBlock = (block: any[]) => {
+          block.forEach((stmt: any, index: number) => {
+            console.log('Current Statement:', stmt.id);
+            if (stmt.id === 'deviceType' && this.statement.deviceMetadata) {
+              const deviceEntry = this.statement.deviceMetadata.find(device => device.uuid === stmt._uuid);
+              let deviceID: string = 'deviceType';
+              if (deviceEntry) {
+                deviceID = deviceEntry.deviceId || 'deviceType';
+                var deviceIDName = deviceID.split('.')[0];
+
+                if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType';
+              } else {
+                deviceID = 'deviceType';
+              }
+
+              if (deviceID === 'deviceType') {
+                const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
+                block[index] = {
+                  ...this.language.statements[deviceID],
+                  id: deviceID,
+                  _uuid: stmt._uuid,
+                  arguments: [
+                    {
+                      type: Types.string,
+                      value: deviceTypeValue,
+                      isInvalid: false,
+                    },
+                  ],
+                  isInvalid: false,
+                };
+              } else {
+                block[index] = {
+                  ...this.language.statements[deviceID],
+                  id: deviceID,
+                  _uuid: stmt._uuid,
+                  isInvalid: false,
+                };
+              }
+            }
+
+            if (stmt.block && Array.isArray(stmt.block)) {
+              parseBlock(stmt.block);
+            }
+          });
+        };
+
+        parseBlock(this.procedureBlockCopy);
       }
-      const initializedProcedures = this.program.header.initializedProcedures;
-      const procedureEntry = initializedProcedures.find((entry) => entry.uuid === this.statement._uuid);
 
-      const parseBlock = (block: any[]) => {
-        block.forEach((stmt: any, index: number) => {
-          console.log('Current Statement:', stmt.id);
-          if (stmt.id === 'deviceType') {
-            const deviceEntry = procedureEntry.devices.find((device) => device.uuid === stmt._uuid);
-            let deviceID: string = 'deviceType'; 
-            if (deviceEntry) {
-              deviceID = deviceEntry.deviceId || 'deviceType'; 
-              var deviceIDName = deviceID.split('.')[0];
-
-            if (!this.language.deviceList.includes(deviceIDName)) deviceID = 'deviceType'; 
-              
-            } else {
-              deviceID = 'deviceType';
-            }
-            if  (deviceID === 'deviceType'){
-              const deviceTypeValue = stmt.arguments && stmt.arguments[0] ? stmt.arguments[0].value : '';
-              block[index] = {
-                ... this.language.statements[deviceID],
-                id: deviceID,
-                _uuid: stmt._uuid,
-                arguments: [
-                  {
-                    type: Types.string,
-                    value: deviceTypeValue,
-                    isInvalid: false,
-                  },
-                ],
-                isInvalid: false,
-              };
-            } else {
-              block[index] = {
-                ... this.language.statements[deviceID],
-                id: deviceID,
-                _uuid: stmt._uuid,
-                isInvalid: false,
-              };
-            }
-
-
-          }
-          if (stmt.block && Array.isArray(stmt.block)) {
-            parseBlock(stmt.block); 
-          }
-        });
-      };
-
-      parseBlock(this.procedureBlockCopy); 
-
-      this.requestUpdate(); 
+      this.requestUpdate();
     }
     this.procModalRef.value.showModal();
   }

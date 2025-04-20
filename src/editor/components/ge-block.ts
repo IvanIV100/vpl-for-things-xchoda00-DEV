@@ -2,7 +2,7 @@ import { consume } from '@lit/context';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { languageContext, programContext } from '@/editor/context/editor-context';
-import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, MetadataInit, initDefaultArgumentType } from '@/vpl/program';
+import { Block, Program, ProgramStatement, CompoundStatement, AbstractStatementWithArgs, assignUuidToBlock, DeviceMetadata, initDefaultArgumentType } from '@/vpl/program';
 import { graphicalEditorCustomEvent, statementCustomEvent } from '@/editor/editor-custom-events';
 import {
   CompoundLanguageStatement,
@@ -340,7 +340,7 @@ export class GeBlock extends LitElement {
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: String(arg.value),
-                values: undefined
+                values: []
               });
             } else if (this.language.deviceList.includes(deviceName)) {
               const deviceStatement = {
@@ -373,7 +373,7 @@ export class GeBlock extends LitElement {
               devices.push({
                 uuid: stmt._uuid,
                 deviceId: stmt.id,
-                values: undefined
+                values: []
               });
             }
           }
@@ -384,12 +384,8 @@ export class GeBlock extends LitElement {
       };
       parseBlockForDevices(userProcedureBlock);
 
-      const newEntry: MetadataInit = {
-        uuid: addedStmt._uuid,
-        id: stmtKey,
-        devices: devices,
-      };
-      this.program.header.initializedProcedures.push(newEntry);
+      // Add deviceMetadata directly to the statement
+      addedStmt.deviceMetadata = devices;
     }
 
     const event = new CustomEvent(graphicalEditorCustomEvent.PROGRAM_UPDATED, {
@@ -458,14 +454,8 @@ export class GeBlock extends LitElement {
       return;
     }
     let statementIndex = e.detail.index;
-    const stmtToRemove = this.block[statementIndex];
 
-    if (this.language.statements[stmtToRemove.id]?.isUserProcedure) {
-      this.program.header.initializedProcedures = this.program.header.initializedProcedures.filter(
-        (entry) => entry.uuid !== stmtToRemove._uuid
-      );
-    }
-
+    // The deviceMetadata is already part of the statement, so it will be removed when the statement is removed
     this.block.splice(statementIndex, 1);
     this.requestUpdate();
     e.stopPropagation();
@@ -707,39 +697,42 @@ export class GeBlock extends LitElement {
         });
         this.dispatchEvent(deviceSelectionEvent);
 
-        const metadataEntry = this.program.header.initializedProcedures.find(
-          (entry) => entry.uuid === this.tmpUUID
-        );
+        // Find the parent procedure statement that contains this device
+        const parentProcedureStmt = this.block.find(stmt => stmt._uuid === this.tmpUUID);
 
-        if (metadataEntry) {
-          const deviceEntry = metadataEntry.devices.find(device => device.uuid === clickedBlock._uuid);
+        // Update the deviceMetadata in the statement
+        if (parentProcedureStmt && parentProcedureStmt.deviceMetadata) {
+          const deviceEntry = parentProcedureStmt.deviceMetadata.find(device => device.uuid === clickedBlock._uuid);
           if (deviceEntry) {
             deviceEntry.deviceId = stmtKey;
             const langStatement = this.language.statements[stmtKey];
 
-            
-
             if (langStatement && (langStatement as UnitLanguageStatementWithArgs).arguments) {
               const argDefs = (langStatement as UnitLanguageStatementWithArgs).arguments;
-              argDefs.forEach(argDef => {
-                const newArg = {
-                  type: argDef.type,
-                  value: null
-                };
+              // Initialize values array if needed
+              if (!deviceEntry.values) {
+                deviceEntry.values = [];
+              }
+
+              // Set default values for each argument
+              argDefs.forEach((argDef, index) => {
+                let defaultValue = '';
                 if (argDef.type === 'str_opt' || argDef.type === 'num_opt') {
-                  newArg.value = argDef.options[0].id;
+                  defaultValue = String(argDef.options[0].id);
                 } else {
-                  newArg.value = initDefaultArgumentType(argDef.type);
+                  const initValue = initDefaultArgumentType(argDef.type);
+                  defaultValue = initValue !== null ? String(initValue) : '';
                 }
 
-                
+                // Set the default value in the values array
+                deviceEntry.values[index] = defaultValue;
               });
             }
           } else {
-            console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid}`);
+            console.warn(`No device metadata entry found for UUID: ${clickedBlock._uuid} in statement deviceMetadata`);
           }
         } else {
-          console.warn(`No metadata entry found for UUID: ${this.tmpUUID}`);
+          console.warn(`No parent procedure statement found with UUID: ${this.tmpUUID} or missing deviceMetadata`);
         }
 
         this.requestUpdate();
