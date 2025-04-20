@@ -325,14 +325,14 @@ export class GEStatement extends LitElement {
 
     //----------------------------
     this.addEventListener(deviceMetadataCustomEvent.VALUE_CHANGED, (_e: CustomEvent) => {
-      // if (this.statement._uuid && this.editorMode === 'initialize') {
-      //   console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
-      //   const initProcEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata); //parse the body
+      if (this.statement._uuid && this.editorMode === 'initialize') {
+        console.log(`Device metadata value changed for UUID: ${this.uuidMetadata}`);
+        const initProcEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
 
-      //   if (initProcEntry) {
-      //     this.updateDeviceMetadataValue();
-      //   }
-      // }
+        if (initProcEntry) {
+          this.updateDeviceMetadataValue();
+        }
+      }
     });
 
     this.addEventListener(procedureEditorCustomEvent.PROCEDURE_MODAL_CLOSED, (_e: CustomEvent) => {
@@ -343,18 +343,17 @@ export class GEStatement extends LitElement {
   }
 
   updateDeviceMetadataValue() {
+    if (!this.statement._uuid) return;
+    const procInitEntry = this.program.block.find(entry => entry._uuid === this.uuidMetadata);
+    const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
     
-    // if (!this.statement._uuid) return;
-    // const procInitEntry = this.program.header.initializedProcedures.find(entry => entry.uuid === this.uuidMetadata);
-    // const deviceEntry = procInitEntry?.devices.find(device => device.uuid === this.statement._uuid);
-    
-    // if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
-    //   const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
-    //   if (argValue !== undefined && argValue !== null) {
-    //     deviceEntry.values[0] = String(argValue);
-    //   }
-    //   return; 
-    // }
+    if (deviceEntry && (this.statement as AbstractStatementWithArgs).arguments) {
+      const argValue = (this.statement as AbstractStatementWithArgs).arguments[0]?.value;
+      if (argValue !== undefined && argValue !== null) {
+        deviceEntry.values[0] = String(argValue);
+      }
+      return; 
+    }
   }
 
   countDeviceTypeBlocks(block: any[]): number {
@@ -383,25 +382,23 @@ export class GEStatement extends LitElement {
   }
 
   countInitializedDevices(procedureUuid: string): number {
-    // if (!this.program || !procedureUuid) return 0;
-    // const procedureEntry = this.program.header.initializedProcedures.find(
-    //   entry => entry.uuid === procedureUuid
-    // );
-    // if (!procedureEntry) return 0;
-    // const initializedCount = procedureEntry.devices.filter(device => {
-    //   if (device.deviceId === 'deviceType') {
-    //     return false;
-    //   }
+    if (!this.program || !procedureUuid) return 0;
+    const procedureEntry = this.program.block.find( entry => entry._uuid === procedureUuid);
+    
+    if (!procedureEntry) return 0;
+    const initializedCount = procedureEntry.devices.filter(device => {
+      if (device.deviceId === 'deviceType') {
+        return false;
+      }
 
-    //   if (this.language.statements[device.deviceId]) {
-    //     return true;
-    //   }
+      if (this.language.statements[device.deviceId]) {
+        return true;
+      }
 
-    //   return false;
-    // }).length;
+      return false;
+    }).length;
 
-    // return initializedCount;
-    return 0;
+    return initializedCount;
   }
 
   areAllDevicesInitialized(): boolean {
